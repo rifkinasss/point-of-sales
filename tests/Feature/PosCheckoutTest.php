@@ -47,6 +47,16 @@ class PosCheckoutTest extends TestCase
             ->assertRedirect('/cashier/open-shift');
     }
 
+    public function test_legacy_pos_checkout_route_uses_the_cashier_layout(): void
+    {
+        [$cashier] = $this->prepareCheckoutContext();
+
+        $this->actingAs($cashier)
+            ->get('/cashier/pos-checkout')
+            ->assertOk()
+            ->assertSee('NasLabs POS');
+    }
+
     public function test_pos_workspace_renders_product_search_and_category_filter(): void
     {
         [$cashier, $product, $category] = $this->prepareCheckoutContext();
