@@ -73,7 +73,7 @@ class ManagerDashboardQuery
             'paymentBreakdown' => $paymentBreakdown,
             'activeShifts' => $activeShifts,
             'cashActivity' => $this->cashActivity($manager, $start, $end),
-            'lowStockProducts' => Product::query()->withoutGlobalScopes()->with('inventory')
+            'lowStockProducts' => Product::query()->withoutGlobalScopes()->with(['inventory', 'category'])
                 ->where('store_id', $manager->store_id)->where('is_active', true)
                 ->whereHas('inventory', fn ($query) => $query->whereColumn('quantity', '<=', 'products.minimum_stock'))
                 ->orderBy('name')->limit(5)->get(),
