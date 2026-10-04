@@ -13,7 +13,7 @@
             <img alt="{{ $product->name }}" class="h-24 w-full object-contain drop-shadow-sm" src="{{ asset('storage/'.$product->image_path) }}">
         @else
             <span class="grid size-12 place-items-center rounded-lg bg-surface text-primary ring-1 ring-primary-soft-strong dark:bg-white/10 dark:text-blue-300 dark:ring-white/10">
-                <x-filament::icon icon="heroicon-o-cube" class="size-7" />
+                <x-filament::icon icon="heroicon-o-cube" class="size-5" aria-hidden="true" />
             </span>
         @endif
         @if ($product->product_type->tracksInventory())
@@ -27,7 +27,7 @@
     <div class="flex flex-1 flex-col p-3">
         <span class="block line-clamp-2 text-sm font-bold leading-5">{{ $product->name }}</span>
         @if ($product->relationLoaded('optionGroups') && $product->optionGroups->isNotEmpty())
-            <span class="mt-1 inline-flex items-center gap-1 text-xs text-primary"><x-filament::icon icon="heroicon-o-adjustments-horizontal" class="size-3.5" aria-hidden="true" /> Tersedia opsi & add-on</span>
+            <span class="mt-1 inline-flex items-center gap-2 text-xs text-primary"><x-filament::icon icon="heroicon-o-adjustments-horizontal" class="size-4 shrink-0" aria-hidden="true" /> Tersedia opsi & add-on</span>
         @endif
 
         <div class="mt-auto flex items-end justify-between gap-2 pt-3">
