@@ -86,8 +86,9 @@ class SaleActionsTest extends TestCase
         $second = app(CreatePendingSaleAction::class)->handle($shift, $manager, [['product_id' => $product->id, 'quantity' => 1]]);
 
         $this->assertNotSame($first->invoice_number, $second->invoice_number);
-        $this->assertMatchesRegularExpression('/^[A-Z0-9]{3}-'.now()->format('Ymd').'-000001$/', $first->invoice_number);
-        $this->assertMatchesRegularExpression('/^[A-Z0-9]{3}-'.now()->format('Ymd').'-000002$/', $second->invoice_number);
+        $businessDate = now($shift->store?->timezone ?: config('app.timezone', 'UTC'))->format('Ymd');
+        $this->assertMatchesRegularExpression('/^[A-Z0-9]{3}-'.$businessDate.'-000001$/', $first->invoice_number);
+        $this->assertMatchesRegularExpression('/^[A-Z0-9]{3}-'.$businessDate.'-000002$/', $second->invoice_number);
         $this->assertDatabaseCount('sales', 2);
     }
 

@@ -1,0 +1,55 @@
+@php
+    $money = fn (int|float|null $value): string => 'Rp '.number_format((int) $value, 0, ',', '.');
+    $date = fn ($value): string => $value instanceof \DateTimeInterface ? $value->format('d M Y H:i') : (string) ($value ?? '-');
+    $summaryLabels = ['gross' => 'Gross sales', 'discount' => 'Total diskon', 'refund' => 'Refund', 'net' => 'Net sales', 'transactions' => 'Transaksi', 'average' => 'Rata-rata order', 'completed' => 'Pembayaran selesai', 'completedCount' => 'Allocation selesai', 'pending' => 'Pending', 'failed' => 'Failed', 'refunded' => 'Refunded', 'opened' => 'Shift dibuka', 'closed' => 'Shift ditutup', 'active' => 'Shift aktif', 'opening' => 'Opening cash', 'expected' => 'Expected cash', 'actual' => 'Actual closed cash', 'variance' => 'Variance', 'averageDuration' => 'Rata-rata durasi', 'cashIn' => 'Cash in', 'cashOut' => 'Cash out', 'sales' => 'Cash sales', 'refunds' => 'Cash refund', 'products' => 'Produk terjual', 'quantity' => 'Qty terjual', 'revenue' => 'Revenue', 'stockIn' => 'Stock in', 'stockOut' => 'Stock out', 'sale' => 'Sales consumption', 'adjustmentIn' => 'Adjustment in', 'adjustmentOut' => 'Adjustment out'];
+    $moneyKeys = ['gross', 'discount', 'refund', 'net', 'average', 'completed', 'pending', 'failed', 'refunded', 'opening', 'expected', 'actual', 'variance', 'cashIn', 'cashOut', 'sales', 'refunds', 'revenue'];
+@endphp
+
+<div class="space-y-6">
+    @if ($report === 'overview')
+        <header>
+            <p class="text-xs font-bold uppercase tracking-[0.18em] text-primary">Laporan</p>
+            <h1 class="mt-2 text-3xl font-black tracking-tight text-foreground">Ringkasan operasional</h1>
+            <p class="mt-2 max-w-2xl text-sm text-muted">Analisis transaksi, pembayaran, shift, kas, produk, dan inventori toko.</p>
+        </header>
+        <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Ringkasan hari ini">
+            @foreach ($data['summary'] as $label => $value)
+                <div class="nl-surface p-4"><p class="text-xs font-semibold text-muted">{{ ucfirst($label) }}</p><p class="mt-2 text-xl font-black text-foreground">{{ in_array($label, ['penjualan bersih', 'pembayaran selesai'], true) ? $money($value) : number_format($value, 0, ',', '.') }}</p><p class="mt-1 text-xs text-muted">{{ $data['period']['label'] }}</p></div>
+            @endforeach
+        </section>
+        <section class="grid gap-3 md:grid-cols-2 xl:grid-cols-3" aria-label="Daftar laporan">
+            @foreach ($data['reports'] as $item)
+                    <a href="{{ route('manager.reports.'.$item['key']) }}" class="nl-focus nl-surface group p-5 transition hover:border-primary hover:bg-primary-soft">
+                    <div class="flex items-start justify-between gap-4"><span class="grid size-10 shrink-0 place-items-center rounded-lg bg-primary-soft text-primary"><x-filament::icon :icon="$item['icon']" class="size-5" aria-hidden="true" /></span><x-filament::icon icon="heroicon-o-arrow-up-right" class="size-4 text-muted transition group-hover:text-primary" aria-hidden="true" /></div>
+                    <h2 class="mt-5 font-bold text-foreground">{{ $item['title'] }}</h2><p class="mt-1 text-sm leading-6 text-muted">{{ $item['description'] }}</p>
+                </a>
+            @endforeach
+        </section>
+    @else
+        <header class="flex flex-wrap items-end justify-between gap-4">
+            <div><p class="text-xs font-bold uppercase tracking-[0.18em] text-primary">Laporan</p><h1 class="mt-2 text-3xl font-black tracking-tight text-foreground">{{ $data['title'] }}</h1><p class="mt-2 max-w-3xl text-sm text-muted">{{ $data['description'] }}</p></div>
+            <div class="flex items-center gap-2"><a class="nl-focus inline-flex min-h-10 items-center gap-2 rounded-lg border border-border bg-surface px-3 text-sm font-bold text-secondary hover:border-primary hover:text-primary" href="{{ route('manager.reports.print', ['report' => $report, 'date_preset' => $datePreset, 'date_from' => $dateFrom, 'date_to' => $dateTo]) }}" target="_blank"><x-filament::icon icon="heroicon-o-printer" class="size-4" aria-hidden="true" />Cetak</a><button class="nl-focus inline-flex min-h-10 items-center gap-2 rounded-lg bg-primary px-3 text-sm font-bold text-white hover:bg-primary-hover" type="button" wire:click="exportCsv"><x-filament::icon icon="heroicon-o-arrow-down-tray" class="size-4" aria-hidden="true" />Export CSV</button></div>
+        </header>
+        <section class="nl-surface p-4" aria-label="Filter laporan">
+            <div class="grid gap-3 lg:grid-cols-[180px_1fr_1fr_auto] lg:items-end">
+                <label class="block"><span class="mb-1.5 block text-xs font-semibold text-muted">Periode</span><select class="nl-focus h-11 w-full rounded-lg border border-border bg-surface px-3 text-sm text-foreground focus:border-primary focus:ring-4 focus:ring-primary/10" wire:model.live="datePreset"><option value="today">Hari ini</option><option value="yesterday">Kemarin</option><option value="last_7_days">7 hari terakhir</option><option value="last_30_days">30 hari terakhir</option><option value="this_month">Bulan ini</option><option value="custom">Rentang custom</option></select></label>
+                @if (in_array($report, ['sales', 'payments', 'shifts'], true))<label class="block"><span class="mb-1.5 block text-xs font-semibold text-muted">Kasir, opsional</span><input class="nl-focus h-11 w-full rounded-lg border border-border bg-surface px-3 text-sm text-foreground placeholder:text-muted focus:border-primary focus:ring-4 focus:ring-primary/10" wire:model.live.debounce.300ms="cashier" placeholder="Cari nama kasir" /></label>@else <div></div>@endif
+                @if ($report === 'products')<label class="block"><span class="mb-1.5 block text-xs font-semibold text-muted">Urutkan produk</span><select class="nl-focus h-11 w-full rounded-lg border border-border bg-surface px-3 text-sm text-foreground focus:border-primary focus:ring-4 focus:ring-primary/10" wire:model.live="productSort"><option value="revenue">Revenue tertinggi</option><option value="quantity">Qty tertinggi</option><option value="lowest_quantity">Qty terendah</option></select></label>@else <div></div>@endif
+                <button class="nl-focus inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-border bg-surface px-3 text-sm font-bold text-secondary hover:border-primary hover:text-primary" type="button" wire:click="resetFilters"><x-filament::icon icon="heroicon-o-arrow-path" class="size-4" aria-hidden="true" />Reset</button>
+            </div>
+            @if ($datePreset === 'custom')<div class="mt-3 grid gap-3 border-t border-border pt-3 sm:grid-cols-2"><label class="block"><span class="mb-1.5 block text-xs font-semibold text-muted">Dari tanggal</span><input class="nl-focus h-11 w-full rounded-lg border border-border bg-surface px-3 text-sm focus:border-primary focus:ring-4 focus:ring-primary/10" type="date" wire:model.live="dateFrom" /></label><label class="block"><span class="mb-1.5 block text-xs font-semibold text-muted">Sampai tanggal</span><input class="nl-focus h-11 w-full rounded-lg border border-border bg-surface px-3 text-sm focus:border-primary focus:ring-4 focus:ring-primary/10" type="date" wire:model.live="dateTo" /></label></div>@endif
+            @error('dateFrom')<p class="mt-2 text-xs font-medium text-red-600">{{ $message }}</p>@enderror @error('dateTo')<p class="mt-2 text-xs font-medium text-red-600">{{ $message }}</p>@enderror
+        </section>
+        <p class="text-xs font-medium text-muted">Periode aktif: {{ $data['period']['label'] }}. Timestamp disimpan canonical dan batas tanggal mengikuti timezone store.</p>
+        <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Ringkasan laporan">
+            @foreach ($data['summary'] as $key => $value)
+                @if (isset($summaryLabels[$key]))<div class="nl-surface p-4"><p class="text-xs font-semibold text-muted">{{ $summaryLabels[$key] }}</p><p class="mt-2 text-xl font-black text-foreground">{{ in_array($key, $moneyKeys, true) ? $money($value) : number_format((int) $value, 0, ',', '.') }}{{ $key === 'averageDuration' ? ' menit' : '' }}</p></div>@endif
+            @endforeach
+        </section>
+        @if ($data['rows'] === [])
+            <section class="nl-surface flex flex-col items-center justify-center px-5 py-14 text-center"><span class="grid size-11 place-items-center rounded-lg bg-background text-muted"><x-filament::icon icon="heroicon-o-chart-bar" class="size-6" aria-hidden="true" /></span><h2 class="mt-4 font-bold text-foreground">Belum ada data untuk periode ini.</h2><p class="mt-1 text-sm text-muted">Coba ubah periode atau reset filter.</p><button class="nl-focus mt-4 inline-flex min-h-10 items-center gap-2 rounded-lg bg-primary px-3.5 text-sm font-bold text-white hover:bg-primary-hover" type="button" wire:click="resetFilters"><x-filament::icon icon="heroicon-o-arrow-path" class="size-4" aria-hidden="true" />Reset filter</button></section>
+        @else
+            <section class="nl-surface overflow-hidden"><div class="border-b border-border px-5 py-4"><h2 class="font-bold text-foreground">Detail {{ $data['title'] }}</h2><p class="mt-1 text-xs text-muted">{{ count($data['rows']) }} baris data</p></div><div class="overflow-x-auto"><table class="min-w-[760px] w-full text-left text-sm"><thead class="border-b border-border bg-background text-xs uppercase tracking-wide text-muted"><tr>@foreach ($data['columns'] as $key => $label) @if (filled($label))<th class="px-5 py-3">{{ $label }}</th>@endif @endforeach<th class="px-5 py-3"></th></tr></thead><tbody class="divide-y divide-border">@foreach ($data['rows'] as $row)<tr class="hover:bg-background">@foreach ($data['columns'] as $key => $label) @if (filled($label))<td class="px-5 py-3 {{ in_array($key, ['gross','discount','refund','net','amount','revenue','opening','expected','actual','variance','quantity','count','percentage'], true) ? 'text-right font-semibold' : 'text-secondary' }}">@if ($key === 'date' || in_array($key, ['opened','closed','closed_at'], true)){{ $date($row[$key] ?? null) }}@elseif (in_array($key, ['gross','discount','refund','net','amount','opening','expected','actual','variance','revenue'], true) && is_numeric($row[$key] ?? null)){{ $money($row[$key]) }}@elseif ($key === 'percentage'){{ $row[$key] }}%@else{{ is_scalar($row[$key] ?? null) || $row[$key] ?? null === null ? ($row[$key] ?? '-') : '-' }}@endif</td>@endif @endforeach<td class="px-5 py-3 text-right">@if ($report === 'sales' && filled($row['public_id'] ?? null))<a class="font-bold text-primary hover:text-primary-hover" href="{{ route('manager.transactions.show', ['sale' => $row['public_id']]) }}">Detail</a>@elseif (in_array($report, ['shifts', 'cash'], true) && filled($row['public_id'] ?? null))<a class="font-bold text-primary hover:text-primary-hover" href="{{ route('manager.shifts.show', ['shift' => $row['public_id']]) }}">Detail</a>@endif</td></tr>@endforeach</tbody></table></div></section>
+        @endif
+    @endif
+</div>

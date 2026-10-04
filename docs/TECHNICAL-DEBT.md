@@ -17,6 +17,8 @@
 - Manager customer monitoring is available with store-scoped search, profile detail, paid-sale metrics, transaction history, and limited contact profile editing. Loyalty, segmentation, and CRM automation remain deferred.
 - Manager promotion workspace is available for store-scoped percentage, fixed, and fixed-price product rules with schedule, activation, and product applicability controls. The `Promotion` model has no code field, category relation, usage ledger, or historical sale-usage relation, so authoritative usage monitoring remains unavailable and is explicitly deferred.
 - Transaction redeem-code campaigns remain a separate package domain without current store ownership. They are intentionally not presented as Manager promotion records until store scoping and usage governance are designed.
+- Manager operational reports now cover sales, payments, shifts, cash reconciliation, product performance, and inventory movements. CSV is streamed after authorization and print output uses a dedicated report view; PDF, BI warehouse, forecasting, accounting statements, and scheduled delivery remain deferred.
+- Product performance uses `SaleItem` snapshots for historical quantity and line revenue. Category is shown from the current product relation when available because category is not stored in the sale-item snapshot.
 - Cash reconciliation ledger selesai pada Phase 3 melalui `CashMovement`; koreksi histori tetap harus berupa movement baru, bukan edit/delete.
 - Payment sudah mendukung multi-payment per sale.
 - Partial return belum tersedia; status void tersedia untuk pending sale.

@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegistrationController;
 use App\Http\Controllers\BrowserTimezoneController;
 use App\Http\Controllers\CashierReceiptPrintController;
+use App\Http\Controllers\ManagerReportPrintController;
 use App\Livewire\Cashier\CloseShift;
 use App\Livewire\Cashier\OpenShift;
 use App\Livewire\Cashier\PosCheckout;
@@ -21,6 +22,7 @@ use App\Livewire\Manager\Customers\Index as ManagerCustomers;
 use App\Livewire\Manager\Customers\Show as ManagerCustomerShow;
 use App\Livewire\Manager\Promotions\Index as ManagerPromotions;
 use App\Livewire\Manager\Promotions\Show as ManagerPromotionShow;
+use App\Livewire\Manager\Reports\Index as ManagerReports;
 use App\Livewire\Owner\Dashboard as OwnerDashboard;
 use Illuminate\Support\Facades\Route;
 
@@ -50,6 +52,11 @@ Route::get('/manager/customers', ManagerCustomers::class)->middleware('auth')->n
 Route::get('/manager/customers/{customer:public_id}', ManagerCustomerShow::class)->middleware('auth')->name('manager.customers.show');
 Route::get('/manager/promotions', ManagerPromotions::class)->middleware('auth')->name('manager.promotions.index');
 Route::get('/manager/promotions/{promotion:public_id}', ManagerPromotionShow::class)->middleware('auth')->name('manager.promotions.show');
+Route::get('/manager/reports', ManagerReports::class)->middleware('auth')->name('manager.reports.index');
+foreach (['sales', 'payments', 'shifts', 'cash', 'products', 'inventory'] as $reportRoute) {
+    Route::get('/manager/reports/'.$reportRoute, ManagerReports::class)->middleware('auth')->name('manager.reports.'.$reportRoute);
+}
+Route::get('/manager/reports/{report}/print', ManagerReportPrintController::class)->middleware('auth')->whereIn('report', ['sales', 'payments', 'shifts', 'cash', 'products', 'inventory'])->name('manager.reports.print');
 Route::get('/owner', OwnerDashboard::class)->middleware('auth')->name('owner.dashboard');
 Route::get('/auth/register', [RegistrationController::class, 'create'])->middleware('guest')->name('auth.register');
 Route::post('/auth/register', [RegistrationController::class, 'store'])->middleware('guest')->name('auth.register.store');

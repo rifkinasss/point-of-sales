@@ -48,6 +48,7 @@ Payment tetap `pending` pada level sale sampai `sum(completed payments) == grand
 | Cashier | Livewire operational workspace | `/cashier/*` |
 | Manager | Livewire dashboard, transaction, shift, cash, product/stock, customer monitoring, and promotion rules | `/manager`, `/manager/transactions`, `/manager/shifts`, `/manager/cash`, `/manager/products`, `/manager/customers`, `/manager/promotions` |
 | Promotion price rules | Available | `App\\Models\\Promotion`; Manager can manage scheduled active/inactive percentage, fixed, and fixed-price rules with optional product applicability. |
+| Manager operational reports | Available | `ManagerReportQuery` and Livewire `/manager/reports/*` provide sales, payment, shift, cash, product, and inventory reports with CSV and print output. |
 | Owner | Livewire executive overview baseline | `/owner` |
 
 Transaction redeem-code campaigns remain a separate promotion domain and are not exposed as store-scoped Manager records until their ownership and usage model are defined.
