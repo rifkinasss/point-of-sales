@@ -1,0 +1,10 @@
+<x-layouts.auth title="Daftar Gratis — NasLabs ERP">
+    <div class="rounded-3xl border border-slate-200 bg-white p-7 shadow-xl shadow-slate-200/60 sm:p-9"><p class="text-sm font-bold uppercase tracking-[0.18em] text-indigo-600">Paket Free</p><h1 class="mt-3 text-3xl font-black tracking-tight text-slate-950">Buat toko Anda</h1><p class="mt-2 text-sm leading-6 text-slate-500">Gratis selamanya: hingga 10 produk aktif dan 2 staf operasional.</p>
+        <form action="{{ route('auth.register.store') }}" class="mt-7 space-y-4" method="POST">@csrf
+            <div><label class="mb-1 block text-sm font-semibold">Nama Anda</label><input class="w-full rounded-xl border-slate-300 px-4 py-3" name="name" required value="{{ old('name') }}">@error('name')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror</div>
+            <div><label class="mb-1 block text-sm font-semibold">Nama toko</label><input class="w-full rounded-xl border-slate-300 px-4 py-3" name="store_name" required value="{{ old('store_name') }}">@error('store_name')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror</div>
+            <div><label class="mb-1 block text-sm font-semibold">Email</label><input class="w-full rounded-xl border-slate-300 px-4 py-3" name="email" required type="email" value="{{ old('email') }}">@error('email')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror</div>
+            <div><label class="mb-1 block text-sm font-semibold">Password</label><input class="w-full rounded-xl border-slate-300 px-4 py-3" name="password" required type="password"></div><div><label class="mb-1 block text-sm font-semibold">Konfirmasi password</label><input class="w-full rounded-xl border-slate-300 px-4 py-3" name="password_confirmation" required type="password"></div>
+            <button class="w-full rounded-xl bg-indigo-600 px-4 py-3 font-bold text-white shadow-lg shadow-indigo-200 hover:bg-indigo-700" type="submit">Buat toko gratis</button>
+        </form><p class="mt-6 text-center text-sm text-slate-500">Sudah punya akun? <a class="font-bold text-indigo-600" href="{{ route('auth.login') }}">Masuk</a></p></div>
+</x-layouts.auth>

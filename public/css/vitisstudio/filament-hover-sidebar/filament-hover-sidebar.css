@@ -1,0 +1,77 @@
+/*
+ * Unlayered on purpose. Filament ships its own rules in `@layer components`, and unlayered
+ * declarations beat layered ones regardless of specificity — no !important needed.
+ */
+
+.fhs-pin-btn-ctn {
+    display: none;
+    width: 2.25rem;
+    flex-shrink: 0;
+    margin-inline-end: 0.5rem;
+}
+
+/*
+ * Width alone, deliberately: a coarse pointer gets the same rail, driven by tap instead of
+ * hover (see the `pointerdown` branch in the JS). Gating on `(hover: hover) and
+ * (pointer: fine)` dropped tablets all the way back to core, which put core's collapse
+ * button back in the topbar and left the rail inert under a finger.
+ */
+@media (min-width: 1024px) {
+    body.fhs .fhs-pin-btn-ctn {
+        display: block;
+    }
+
+    /* Core's desktop collapse chevrons toggle `isOpen` directly, which fights the peek. */
+    body.fhs .fi-topbar-open-collapse-sidebar-btn,
+    body.fhs .fi-topbar-close-collapse-sidebar-btn,
+    body.fhs .fi-sidebar-open-collapse-sidebar-btn,
+    body.fhs .fi-sidebar-close-collapse-sidebar-btn {
+        display: none;
+    }
+
+    body.fhs.fi-body-has-sidebar-collapsible-on-desktop:not(.fhs-pinned) {
+        /*
+         * Core's desktop sidebar is `lg:bg-transparent` and simply shows the panel background
+         * painted on `.fi-body`. Going `position: fixed` takes it out of the flow, so it has to
+         * paint its own. Inherit that colour down the ancestor chain rather than naming one:
+         * Tailwind v4 only emits theme variables that are actually used, so `--color-gray-50`
+         * is not reliably defined, and any hardcoded value breaks custom themes — and dark mode
+         * comes along for free. `:has()` keeps this off `.fi-sidebar-close-overlay`, whose
+         * translucent scrim is deliberate.
+         */
+        .fi-layout,
+        .fi-layout > *:has(.fi-sidebar) {
+            background-color: inherit;
+        }
+
+        /* Out of the flex flow, so widening it overlays instead of reflowing. */
+        .fi-sidebar {
+            position: fixed;
+            width: var(--collapsed-sidebar-width);
+            background-color: var(--fhs-sidebar-bg, inherit);
+            transition: width var(--fhs-duration, 150ms) ease;
+        }
+
+        .fi-sidebar.fi-sidebar-open {
+            width: var(--sidebar-width);
+            box-shadow:
+                0 10px 30px -12px rgb(0 0 0 / 0.25),
+                0 0 0 1px rgb(0 0 0 / 0.05);
+        }
+
+        /* Core reserves gutter space unconditionally; at 4.5rem that clips the icons. */
+        .fi-sidebar:not(.fi-sidebar-open) .fi-sidebar-nav {
+            scrollbar-gutter: auto;
+        }
+
+        .fi-main-ctn {
+            padding-inline-start: var(--collapsed-sidebar-width);
+        }
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body.fhs .fi-sidebar {
+        transition: none;
+    }
+}
