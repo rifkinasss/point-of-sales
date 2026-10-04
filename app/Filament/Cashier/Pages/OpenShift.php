@@ -48,6 +48,7 @@ class OpenShift extends Page implements HasForms
                     ->numeric()
                     ->minValue(0)
                     ->prefix('Rp')
+                    ->autofocus()
                     ->required(),
                 Textarea::make('opening_note')
                     ->label('Catatan pembukaan')
