@@ -21,43 +21,47 @@ class DevelopmentUserSeeder extends Seeder
         $users = [
             [
                 'name' => 'Administrator',
-                'email' => 'admin@pos.test',
+                'email' => 'admin@naslabs.my.id',
+                'legacy_emails' => ['admin@pos.test', 'admin@naslabs.id'],
                 'role' => UserRole::Admin,
                 'store_id' => null,
             ],
             [
                 'name' => 'Owner',
-                'email' => 'owner@pos.test',
+                'email' => 'owner@naslabs.my.id',
+                'legacy_emails' => ['owner@pos.test', 'owner@naslabs.id'],
                 'role' => UserRole::Owner,
                 'store_id' => $store->id,
             ],
             [
                 'name' => 'Manager',
-                'email' => 'manager@pos.test',
+                'email' => 'manager@naslabs.my.id',
+                'legacy_emails' => ['manager@pos.test', 'manager@naslabs.id'],
                 'role' => UserRole::Manager,
                 'store_id' => $store->id,
             ],
             [
                 'name' => 'Cashier',
-                'email' => 'cashier@pos.test',
+                'email' => 'cashier@naslabs.my.id',
+                'legacy_emails' => ['cashier@pos.test', 'kasir@naslabs.id'],
                 'role' => UserRole::Cashier,
                 'store_id' => $store->id,
             ],
         ];
 
         foreach ($users as $user) {
-            $record = User::updateOrCreate(
-                [
-                    'email' => $user['email'],
-                ],
-                [
-                    'name' => $user['name'],
-                    'role' => $user['role'],
-                    'store_id' => $user['store_id'],
-                    'password' => Hash::make('password'),
-                    'is_active' => true,
-                ],
-            );
+            $record = User::query()->where('email', $user['email'])->first()
+                ?? User::query()->whereIn('email', $user['legacy_emails'])->first()
+                ?? new User;
+
+            $record->forceFill([
+                'name' => $user['name'],
+                'email' => $user['email'],
+                'role' => $user['role'],
+                'store_id' => $user['store_id'],
+                'password' => Hash::make('password'),
+                'is_active' => true,
+            ])->save();
 
             $record->forceFill(['email_verified_at' => now()])->save();
         }

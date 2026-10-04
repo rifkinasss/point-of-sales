@@ -43,10 +43,10 @@ class DatabaseSeeder extends Seeder
                 'receipt_show_cashier' => true, 'receipt_show_tax' => false,
             ]);
 
-            $owner = $this->user('Nadia Owner', 'owner@naslabs.id', UserRole::Owner, $store->id);
-            $manager = $this->user('Raka Manager', 'manager@naslabs.id', UserRole::Manager, $store->id);
-            $cashier = $this->user('Sinta Kasir', 'kasir@naslabs.id', UserRole::Cashier, $store->id);
-            $this->user('Administrator NasLabs', 'admin@naslabs.id', UserRole::Admin, null);
+            $owner = $this->user('Nadia Owner', 'owner@naslabs.my.id', UserRole::Owner, $store->id);
+            $manager = $this->user('Raka Manager', 'manager@naslabs.my.id', UserRole::Manager, $store->id);
+            $cashier = $this->user('Sinta Kasir', 'cashier@naslabs.my.id', UserRole::Cashier, $store->id);
+            $this->user('Administrator NasLabs', 'admin@naslabs.my.id', UserRole::Admin, null);
 
             $food = Category::withoutGlobalScopes()->updateOrCreate(['name' => 'Makanan'], ['store_id' => $store->id, 'is_active' => true]);
             $drink = Category::withoutGlobalScopes()->updateOrCreate(['name' => 'Minuman'], ['store_id' => $store->id, 'is_active' => true]);

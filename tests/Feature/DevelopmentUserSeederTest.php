@@ -24,10 +24,10 @@ class DevelopmentUserSeederTest extends TestCase
         $this->assertDatabaseCount('users', 4);
 
         $expected = [
-            'admin@pos.test' => [UserRole::Admin, null],
-            'owner@pos.test' => [UserRole::Owner, $store->id],
-            'manager@pos.test' => [UserRole::Manager, $store->id],
-            'cashier@pos.test' => [UserRole::Cashier, $store->id],
+            'admin@naslabs.my.id' => [UserRole::Admin, null],
+            'owner@naslabs.my.id' => [UserRole::Owner, $store->id],
+            'manager@naslabs.my.id' => [UserRole::Manager, $store->id],
+            'cashier@naslabs.my.id' => [UserRole::Cashier, $store->id],
         ];
 
         foreach ($expected as $email => [$role, $storeId]) {
