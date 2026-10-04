@@ -25,7 +25,7 @@ class VoidSaleAction
         return DB::transaction(function () use ($reason, $sale, $user): Sale {
             $sale = Sale::query()->lockForUpdate()->findOrFail($sale->id);
 
-            if ($sale->store_id && $user->store_id && $sale->store_id !== $user->store_id) {
+            if ($user->is_active === false || ($sale->store_id && $user->store_id && $sale->store_id !== $user->store_id)) {
                 throw ValidationException::withMessages(['sale' => 'Transaksi berasal dari toko lain.']);
             }
 

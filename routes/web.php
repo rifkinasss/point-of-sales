@@ -10,6 +10,8 @@ use App\Livewire\Cashier\OpenShift;
 use App\Livewire\Cashier\PosCheckout;
 use App\Livewire\Cashier\Receipt;
 use App\Livewire\Manager\Dashboard as ManagerDashboard;
+use App\Livewire\Manager\Transactions\Index as ManagerTransactions;
+use App\Livewire\Manager\Transactions\Show as ManagerTransactionShow;
 use App\Livewire\Owner\Dashboard as OwnerDashboard;
 use Illuminate\Support\Facades\Route;
 
@@ -28,6 +30,8 @@ Route::get('/cashier/receipt-page', Receipt::class)->middleware('auth')->name('c
 Route::get('/cashier/receipts/{sale:public_id}/print', CashierReceiptPrintController::class)->middleware('auth')->name('cashier.receipt.print');
 Route::get('/cashier/close-shift', CloseShift::class)->middleware('auth')->name('cashier.close-shift');
 Route::get('/manager', ManagerDashboard::class)->middleware('auth')->name('manager.dashboard');
+Route::get('/manager/transactions', ManagerTransactions::class)->middleware('auth')->name('manager.transactions.index');
+Route::get('/manager/transactions/{sale:public_id}', ManagerTransactionShow::class)->middleware('auth')->name('manager.transactions.show');
 Route::get('/owner', OwnerDashboard::class)->middleware('auth')->name('owner.dashboard');
 Route::get('/auth/register', [RegistrationController::class, 'create'])->middleware('guest')->name('auth.register');
 Route::post('/auth/register', [RegistrationController::class, 'store'])->middleware('guest')->name('auth.register.store');

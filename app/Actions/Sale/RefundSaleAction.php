@@ -33,6 +33,10 @@ class RefundSaleAction
         return DB::transaction(function () use ($sale, $user, $reason): SaleReturn {
             $sale = Sale::query()->with('items.product', 'payments', 'cashierShift')->lockForUpdate()->findOrFail($sale->id);
 
+            if ($user->is_active === false || ($sale->store_id && $user->store_id && $sale->store_id !== $user->store_id)) {
+                throw ValidationException::withMessages(['authorization' => 'Transaksi berasal dari toko lain atau pengguna tidak aktif.']);
+            }
+
             if ($sale->status !== SaleStatus::Paid) {
                 throw ValidationException::withMessages(['sale' => 'Hanya transaksi lunas yang dapat direfund.']);
             }

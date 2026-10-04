@@ -15,12 +15,11 @@ class CashierReceiptPrintController extends Controller
     public function __invoke(Request $request, Sale $sale): View
     {
         $user = User::query()->find($request->user()?->getAuthIdentifier());
-        abort_unless($user instanceof User && $user->role === UserRole::Cashier && $user->is_active, 403);
+        abort_unless($user instanceof User && in_array($user->role, [UserRole::Cashier, UserRole::Manager], true) && $user->is_active && filled($user->store_id), 403);
 
         $sale = Sale::query()
             ->with(['items', 'payments', 'cashier', 'customer', 'store'])
             ->whereKey($sale->id)
-            ->where('cashier_id', $user->id)
             ->where('store_id', $user->store_id)
             ->where('status', SaleStatus::Paid)
             ->firstOrFail();

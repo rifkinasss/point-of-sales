@@ -22,6 +22,6 @@ class Dashboard extends Component
 
         return view('livewire.manager.dashboard', [
             'dashboard' => $query->dashboard($user),
-        ])->layout('components.layouts.manager', ['title' => 'Dashboard Operasional']);
+        ])->layout('components.layouts.manager', ['title' => 'Dashboard Operasional', 'activeNav' => 'dashboard']);
     }
 }
