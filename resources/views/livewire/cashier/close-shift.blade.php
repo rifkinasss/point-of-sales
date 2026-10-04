@@ -2,14 +2,14 @@
     @php
         $user = auth()->user();
         $summary = $this->cashSummary;
-        $actualCash = $closingCashActual === '' ? null : (int) $closingCashActual;
-        $variance = $actualCash === null ? null : $actualCash - $summary['expected'];
-        $movements = $shift?->cashMovements?->sortByDesc('created_at') ?? collect();
+        $actualCash = $this->actualCash;
+        $variance = $this->variance;
+        $movements = $this->cashMovements;
     @endphp
 
     <header class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 border-b border-border pb-4">
         <div class="flex min-w-0 items-center gap-3">
-            <a class="grid size-10 shrink-0 place-items-center rounded-lg bg-primary text-sm font-black text-white" href="{{ url('/cashier/pos') }}" aria-label="Kembali ke POS">N</a>
+            <a class="grid size-10 shrink-0 place-items-center rounded-lg bg-primary text-sm font-black text-white" href="{{ $closed ? route('cashier.open-shift') : url('/cashier/pos') }}" aria-label="{{ $closed ? 'Kembali ke buka shift' : 'Kembali ke POS' }}">N</a>
             <div class="min-w-0">
                 <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-primary">NasLabs POS</p>
                 <p class="truncate text-sm font-bold text-foreground">{{ $user?->store?->name ?? 'Toko aktif' }}</p>
@@ -17,17 +17,26 @@
             </div>
         </div>
         <div class="flex items-center gap-2">
-            <a class="nl-focus inline-flex min-h-11 items-center gap-2 rounded-lg border border-border bg-surface px-3 text-sm font-semibold text-secondary transition hover:border-primary hover:text-primary" href="{{ url('/cashier/pos') }}">
-                <x-filament::icon icon="heroicon-o-arrow-left" class="size-4" aria-hidden="true" />
-                Kembali ke POS
-            </a>
-            <form method="POST" action="{{ route('auth.logout') }}">
-                @csrf
-                <button class="nl-focus inline-flex min-h-11 items-center gap-2 rounded-lg border border-border bg-surface px-3 text-sm font-semibold text-secondary transition hover:border-primary hover:text-primary" type="submit" aria-label="Keluar dari akun">
+            @if (! $closed)
+                <a class="nl-focus inline-flex min-h-11 items-center gap-2 rounded-lg border border-border bg-surface px-3 text-sm font-semibold text-secondary transition hover:border-primary hover:text-primary" href="{{ url('/cashier/pos') }}">
+                    <x-filament::icon icon="heroicon-o-arrow-left" class="size-4" aria-hidden="true" />
+                    Kembali ke POS
+                </a>
+            @endif
+            @if ($shift && ! $closed)
+                <button class="nl-focus inline-flex min-h-11 items-center gap-2 rounded-lg border border-border bg-surface px-3 text-sm font-semibold text-secondary transition hover:border-primary hover:text-primary" type="button" wire:click="requestLogout" aria-label="Keluar dari akun">
                     <x-filament::icon icon="heroicon-o-arrow-right-on-rectangle" class="size-4" aria-hidden="true" />
                     Keluar
                 </button>
-            </form>
+            @else
+                <form method="POST" action="{{ route('auth.logout') }}">
+                    @csrf
+                    <button class="nl-focus inline-flex min-h-11 items-center gap-2 rounded-lg border border-border bg-surface px-3 text-sm font-semibold text-secondary transition hover:border-primary hover:text-primary" type="submit" aria-label="Keluar dari akun">
+                        <x-filament::icon icon="heroicon-o-arrow-right-on-rectangle" class="size-4" aria-hidden="true" />
+                        Keluar
+                    </button>
+                </form>
+            @endif
         </div>
     </header>
 
@@ -56,14 +65,45 @@
             </p>
         @endif
 
-        @if ($shift)
+        @if ($closed && $closedShift)
+            @php($closedVariance = (int) $closedShift->cash_difference)
+            <section class="mx-auto max-w-2xl rounded-xl border border-emerald-200 bg-surface p-6 sm:p-8" aria-labelledby="shift-closed-heading">
+                <div class="flex size-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
+                    <x-filament::icon icon="heroicon-o-check-circle" class="size-7" aria-hidden="true" />
+                </div>
+                <p class="mt-6 text-xs font-bold uppercase tracking-[0.16em] text-emerald-700">Shift selesai</p>
+                <h1 id="shift-closed-heading" class="mt-2 text-3xl font-black tracking-tight text-foreground">Shift berhasil ditutup</h1>
+                <p class="mt-2 text-sm leading-6 text-muted">Rekonsiliasi kas sudah tersimpan. Shift ini tidak lagi menerima transaksi baru.</p>
+
+                <dl class="mt-6 grid gap-3 sm:grid-cols-2">
+                    <div class="rounded-lg bg-background p-4"><dt class="text-xs font-semibold text-muted">Kasir</dt><dd class="mt-1 font-bold text-foreground">{{ $user?->name ?? 'Kasir' }}</dd></div>
+                    <div class="rounded-lg bg-background p-4"><dt class="text-xs font-semibold text-muted">Store</dt><dd class="mt-1 font-bold text-foreground">{{ $user?->store?->name ?? 'Store aktif' }}</dd></div>
+                    <div class="rounded-lg bg-background p-4"><dt class="text-xs font-semibold text-muted">Mulai</dt><dd class="mt-1 font-bold text-foreground"><x-local-date-time :value="$closedShift->opened_at" /></dd></div>
+                    <div class="rounded-lg bg-background p-4"><dt class="text-xs font-semibold text-muted">Selesai</dt><dd class="mt-1 font-bold text-foreground"><x-local-date-time :value="$closedShift->closed_at" /></dd></div>
+                </dl>
+
+                <div class="mt-6 divide-y divide-border rounded-lg border border-border">
+                    <div class="flex items-center justify-between gap-4 px-4 py-3 text-sm"><span class="text-muted">Kas diharapkan</span><strong class="text-foreground">Rp {{ number_format($closedShift->expected_cash, 0, ',', '.') }}</strong></div>
+                    <div class="flex items-center justify-between gap-4 px-4 py-3 text-sm"><span class="text-muted">Kas fisik</span><strong class="text-foreground">Rp {{ number_format($closedShift->closing_cash_actual, 0, ',', '.') }}</strong></div>
+                    <div class="flex items-center justify-between gap-4 px-4 py-3 text-sm"><span class="font-semibold text-foreground">Selisih</span><strong class="{{ $closedVariance === 0 ? 'text-emerald-700' : ($closedVariance < 0 ? 'text-red-700' : 'text-amber-700') }}">{{ $closedVariance < 0 ? '- ' : ($closedVariance > 0 ? '+ ' : '') }}Rp {{ number_format(abs($closedVariance), 0, ',', '.') }}</strong></div>
+                    <div class="flex items-center justify-between gap-4 px-4 py-3 text-sm"><span class="font-semibold text-foreground">Status</span><strong class="{{ $closedVariance === 0 ? 'text-emerald-700' : ($closedVariance < 0 ? 'text-red-700' : 'text-amber-700') }}">{{ $closedVariance === 0 ? 'Sesuai' : ($closedVariance < 0 ? 'Kurang' : 'Lebih') }}</strong></div>
+                </div>
+                @if ($closedShift->closing_note)
+                    <div class="mt-4 rounded-lg bg-background p-4 text-sm"><p class="text-xs font-semibold text-muted">Catatan penutupan</p><p class="mt-1 text-foreground">{{ $closedShift->closing_note }}</p></div>
+                @endif
+                <form class="mt-6" method="POST" action="{{ route('auth.logout') }}">
+                    @csrf
+                    <button class="nl-focus inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-bold text-white transition hover:bg-primary-hover" type="submit"><x-filament::icon icon="heroicon-o-arrow-right-on-rectangle" class="size-4" aria-hidden="true" /> Selesai dan keluar</button>
+                </form>
+            </section>
+        @elseif ($shift)
             <section class="mt-7" aria-labelledby="shift-summary-title">
                 <div class="mb-3 flex items-end justify-between gap-4">
                     <div>
                         <p class="text-xs font-bold uppercase tracking-[0.16em] text-muted">Ringkasan finansial</p>
                         <h2 id="shift-summary-title" class="mt-1 text-lg font-bold text-foreground">Posisi kas selama shift</h2>
                     </div>
-                    <span class="hidden text-xs text-muted sm:block">{{ $movements->count() }} pergerakan tercatat</span>
+                    <span class="hidden text-xs text-muted sm:block">{{ $movements->count() }} aktivitas kas</span>
                 </div>
                 <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
                     @foreach ([['Kas awal', $summary['opening'], 'heroicon-o-banknotes'], ['Penjualan tunai', $summary['sales'], 'heroicon-o-shopping-bag'], ['Refund tunai', $summary['refunds'], 'heroicon-o-arrow-uturn-left'], ['Kas masuk', $summary['cashIn'], 'heroicon-o-arrow-down-tray'], ['Kas keluar', $summary['cashOut'], 'heroicon-o-arrow-up-tray']] as [$label, $amount, $icon])
@@ -114,10 +154,10 @@
                             @error('closingCashActual')<p class="mt-2 text-sm font-semibold text-red-600">{{ $message }}</p>@enderror
                         </div>
 
-                        <div class="rounded-lg border border-border bg-background p-4">
-                            <div class="flex flex-wrap items-center justify-between gap-3">
-                                <div>
-                                    <p class="text-xs font-semibold text-muted">Selisih otomatis</p>
+                            <div class="rounded-lg border border-border bg-background p-4">
+                                <div class="flex flex-wrap items-center justify-between gap-3">
+                                    <div>
+                                    <p class="text-xs font-semibold text-muted">Hasil rekonsiliasi</p>
                                     <p class="mt-1 text-lg font-black {{ $variance === null ? 'text-muted' : ($variance === 0 ? 'text-emerald-700' : ($variance < 0 ? 'text-red-700' : 'text-amber-700')) }}">
                                         {{ $variance === null ? 'Belum dihitung' : ($variance < 0 ? '- ' : ($variance > 0 ? '+ ' : '')).'Rp '.number_format(abs($variance), 0, ',', '.') }}
                                     </p>
@@ -138,15 +178,17 @@
                         </div>
 
                         <div>
-                            <label class="block text-sm font-bold text-foreground" for="closing-note">Catatan penutupan <span class="font-normal text-muted">(opsional jika sesuai)</span></label>
-                            <textarea id="closing-note" class="mt-2 min-h-24 w-full rounded-lg border border-border bg-surface px-4 py-3 text-sm text-foreground outline-none placeholder:text-muted focus:border-primary focus:ring-4 focus:ring-primary/10" maxlength="1000" wire:model="closingNote" placeholder="Contoh: kas diserahkan ke supervisor"></textarea>
+                            <label class="block text-sm font-bold text-foreground" for="closing-note">@if ($variance !== null && $variance !== 0) Catatan selisih <span class="font-normal text-red-700">*</span> @else Catatan penutupan <span class="font-normal text-muted">(opsional)</span> @endif</label>
+                            <textarea id="closing-note" class="mt-2 min-h-24 w-full rounded-lg border border-border bg-surface px-4 py-3 text-sm text-foreground outline-none placeholder:text-muted focus:border-primary focus:ring-4 focus:ring-primary/10" maxlength="1000" wire:model.live="closingNote" placeholder="Contoh: kas diserahkan ke supervisor"></textarea>
+                            @if ($variance !== null && $variance !== 0)<p class="mt-2 text-xs text-muted">Jelaskan penyebab selisih sebelum menutup shift.</p>@endif
                             @error('closingNote')<p class="mt-2 text-sm font-semibold text-red-600">{{ $message }}</p>@enderror
                             @error('closing_note')<p class="mt-2 text-sm font-semibold text-red-600">{{ $message }}</p>@enderror
                         </div>
 
-                        <div class="border-t border-border pt-4">
-                            <div class="flex items-start gap-2 text-xs leading-5 text-muted"><x-filament::icon icon="heroicon-o-lock-closed" class="mt-0.5 size-4 shrink-0" aria-hidden="true" /> Setelah ditutup, shift ini tidak dapat menerima transaksi baru.</div>
-                            <button class="nl-focus mt-4 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 font-bold text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60" type="submit" wire:loading.attr="disabled" wire:target="closeShift">
+                            <div class="border-t border-border pt-4">
+                                @if ($variance !== null && $variance !== 0)<p class="flex items-start gap-2 text-xs font-semibold leading-5 text-amber-800"><x-filament::icon icon="heroicon-o-exclamation-triangle" class="mt-0.5 size-4 shrink-0" aria-hidden="true" /> Shift memiliki selisih kas. Pastikan catatan sudah benar sebelum menutup.</p>@endif
+                                <div class="flex items-start gap-2 text-xs leading-5 text-muted"><x-filament::icon icon="heroicon-o-lock-closed" class="mt-0.5 size-4 shrink-0" aria-hidden="true" /> Setelah ditutup, shift ini tidak dapat menerima transaksi baru.</div>
+                            <button class="nl-focus mt-4 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 font-bold text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500" type="submit" @disabled(! $this->canClose) wire:loading.attr="disabled" wire:target="closeShift">
                                 <x-filament::icon icon="heroicon-o-lock-closed" class="size-5" aria-hidden="true" />
                                 <span wire:loading.remove wire:target="closeShift">Tutup shift sekarang</span>
                                 <span wire:loading wire:target="closeShift">Menyimpan rekonsiliasi...</span>
@@ -167,13 +209,21 @@
 
                     <div class="mt-5 space-y-2">
                         @forelse ($movements as $movement)
-                            @php($isIn = in_array($movement->type->value, ['opening', 'cash_in', 'sale'], true))
-                            @php($movementLabel = ['opening' => 'Kas awal', 'sale' => 'Penjualan tunai', 'refund' => 'Refund tunai', 'cash_in' => 'Kas masuk', 'cash_out' => 'Kas keluar'][$movement->type->value] ?? 'Pergerakan kas')
+                            @php($movementType = $movement->type->value)
+                            @php($movementMeta = [
+                                'opening' => ['label' => 'Kas awal', 'icon' => 'heroicon-o-wallet', 'tone' => 'neutral', 'prefix' => ''],
+                                'sale' => ['label' => 'Penjualan tunai', 'icon' => 'heroicon-o-shopping-bag', 'tone' => 'success', 'prefix' => '+ '],
+                                'refund' => ['label' => 'Refund tunai', 'icon' => 'heroicon-o-arrow-uturn-left', 'tone' => 'danger', 'prefix' => '- '],
+                                'cash_in' => ['label' => 'Kas masuk', 'icon' => 'heroicon-o-arrow-down-tray', 'tone' => 'success', 'prefix' => '+ '],
+                                'cash_out' => ['label' => 'Kas keluar', 'icon' => 'heroicon-o-arrow-up-tray', 'tone' => 'danger', 'prefix' => '- '],
+                            ][$movementType] ?? ['label' => 'Pergerakan kas', 'icon' => 'heroicon-o-arrows-right-left', 'tone' => 'neutral', 'prefix' => ''])
+                            @php($movementTone = ['success' => 'bg-emerald-50 text-emerald-700', 'danger' => 'bg-red-50 text-red-700', 'neutral' => 'bg-slate-100 text-slate-600'][$movementMeta['tone']])
+                            @php($movementAmountTone = ['success' => 'text-emerald-700', 'danger' => 'text-red-700', 'neutral' => 'text-foreground'][$movementMeta['tone']])
                             <div class="flex items-start gap-3 rounded-lg border border-border px-3 py-3">
-                                <span class="grid size-8 shrink-0 place-items-center rounded-md {{ $isIn ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700' }}"><x-filament::icon icon="{{ $movement->type->value === 'cash_out' ? 'heroicon-o-arrow-up-tray' : 'heroicon-o-arrow-down-tray' }}" class="size-4" aria-hidden="true" /></span>
+                                <span class="grid size-8 shrink-0 place-items-center rounded-md {{ $movementTone }}"><x-filament::icon icon="{{ $movementMeta['icon'] }}" class="size-4" aria-hidden="true" /></span>
                                 <div class="min-w-0 flex-1">
-                                    <div class="flex items-start justify-between gap-3 text-sm"><p class="font-bold text-foreground">{{ $movementLabel }}</p><span class="shrink-0 font-bold {{ $isIn ? 'text-emerald-700' : 'text-red-700' }}">{{ $isIn ? '+' : '-' }} Rp {{ number_format($movement->amount, 0, ',', '.') }}</span></div>
-                                    <p class="mt-1 truncate text-xs text-muted">{{ $movement->note ?: 'Tanpa catatan' }}</p>
+                                    <div class="flex items-start justify-between gap-3 text-sm"><p class="font-bold text-foreground">{{ $movementMeta['label'] }}</p><span class="shrink-0 font-bold {{ $movementAmountTone }}">{{ $movementMeta['prefix'] }}Rp {{ number_format($movement->amount, 0, ',', '.') }}</span></div>
+                                    <p class="mt-1 truncate text-xs text-muted">{{ $movement->reference_invoice ?: ($movement->note ?: ($movementType === 'opening' ? 'Saldo awal shift' : 'Tanpa catatan')) }}</p>
                                 </div>
                             </div>
                         @empty
@@ -191,6 +241,23 @@
             <div class="mt-7 rounded-xl border border-border bg-surface p-6 text-center"><x-filament::icon icon="heroicon-o-lock-closed" class="mx-auto size-8 text-muted" aria-hidden="true" /><p class="mt-3 font-bold text-foreground">Tidak ada shift aktif</p><p class="mt-1 text-sm text-muted">Buka shift baru untuk melanjutkan operasional kasir.</p><a class="nl-focus mt-5 inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-bold text-white hover:bg-primary-hover" href="{{ route('cashier.open-shift') }}"><x-filament::icon icon="heroicon-o-arrow-right" class="size-4" aria-hidden="true" /> Buka shift</a></div>
         @endif
     </main>
+
+    <div x-cloak x-show="$wire.logoutConfirmationOpen" x-on:keydown.escape.window="$wire.closeLogoutConfirmation()" class="pos-modal-overlay fixed inset-0 z-50 grid place-items-center p-4" role="dialog" aria-modal="true" aria-labelledby="logout-guard-title" x-transition.opacity>
+        <div class="pos-modal-surface w-full max-w-md overflow-hidden bg-surface" x-on:click.stop>
+            <div class="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
+                <div>
+                    <p class="text-xs font-bold uppercase tracking-[0.16em] text-amber-700">SHIFT MASIH AKTIF</p>
+                    <h2 id="logout-guard-title" class="mt-1 text-xl font-black text-foreground">Shift belum ditutup</h2>
+                    <p class="mt-1 text-sm leading-5 text-muted">Tutup shift terlebih dahulu agar rekonsiliasi kas tercatat dengan benar.</p>
+                </div>
+                <button class="nl-focus grid size-9 shrink-0 place-items-center rounded-lg text-muted hover:bg-background hover:text-foreground" type="button" aria-label="Tutup dialog" wire:click="closeLogoutConfirmation"><x-filament::icon icon="heroicon-o-x-mark" class="size-5" aria-hidden="true" /></button>
+            </div>
+            <div class="flex justify-end gap-2 p-5">
+                <button class="nl-focus inline-flex min-h-11 items-center gap-2 rounded-lg border border-border bg-surface px-4 text-sm font-semibold text-secondary hover:border-primary hover:text-primary" type="button" wire:click="closeLogoutConfirmation">Batal</button>
+                <button class="nl-focus inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-bold text-white hover:bg-primary-hover" type="button" wire:click="closeLogoutConfirmation" x-on:click="$nextTick(() => document.getElementById('closing-cash-actual')?.focus())"><x-filament::icon icon="heroicon-o-lock-closed" class="size-4" aria-hidden="true" /> Tutup shift</button>
+            </div>
+        </div>
+    </div>
 
     <div x-cloak x-show="$wire.movementModalOpen" x-on:keydown.escape.window="$wire.closeMovementModal()" class="pos-modal-overlay fixed inset-0 z-50 grid place-items-center p-4" role="dialog" aria-modal="true" aria-labelledby="movement-modal-title" x-transition.opacity>
         <div class="pos-modal-surface w-full max-w-md overflow-hidden bg-surface" x-on:click.stop>

@@ -138,6 +138,78 @@ class CashierOpenShiftTest extends TestCase
             ->assertSet('movementModalOpen', false);
     }
 
+    public function test_close_shift_cta_requires_valid_cash_and_note_for_variance(): void
+    {
+        $cashier = $this->cashier();
+        app(OpenShiftAction::class)->handle($cashier, 100000);
+
+        Livewire::actingAs($cashier)
+            ->test(CloseShift::class)
+            ->assertSet('canClose', false)
+            ->set('closingCashActual', 100000)
+            ->assertSet('variance', 0)
+            ->assertSet('canClose', true)
+            ->set('closingCashActual', 95000)
+            ->assertSet('variance', -5000)
+            ->assertSet('canClose', false)
+            ->set('closingNote', 'Selisih kas dicatat untuk pemeriksaan supervisor.')
+            ->assertSet('canClose', true);
+    }
+
+    public function test_close_shift_shows_success_snapshot_and_preserves_variance(): void
+    {
+        $cashier = $this->cashier();
+        app(OpenShiftAction::class)->handle($cashier, 100000);
+
+        Livewire::actingAs($cashier)
+            ->test(CloseShift::class)
+            ->set('closingCashActual', 103000)
+            ->set('closingNote', 'Kas surplus dari penghitungan akhir.')
+            ->call('closeShift')
+            ->assertSet('closed', true)
+            ->assertSet('closedShift.cash_difference', 3000)
+            ->assertSee('Shift berhasil ditutup')
+            ->assertSee('Lebih');
+
+        $this->assertDatabaseHas('cashier_shifts', [
+            'user_id' => $cashier->id,
+            'status' => ShiftStatus::Closed->value,
+            'expected_cash' => 100000,
+            'closing_cash_actual' => 103000,
+            'cash_difference' => 3000,
+        ]);
+    }
+
+    public function test_close_shift_movement_list_uses_semantic_labels(): void
+    {
+        $cashier = $this->cashier();
+        $shift = app(OpenShiftAction::class)->handle($cashier, 100000);
+        app(\App\Actions\Cash\CreateCashInAction::class)->handle($shift, $cashier, 5000, 'Modal tambahan');
+        app(\App\Actions\Cash\CreateCashOutAction::class)->handle($shift, $cashier, 2000, 'Pembelian kecil');
+
+        Livewire::actingAs($cashier)
+            ->test(CloseShift::class)
+            ->assertSee('Kas awal')
+            ->assertSee('Kas masuk')
+            ->assertSee('Kas keluar')
+            ->assertSee('Saldo awal shift')
+            ->assertSee('aktivitas kas');
+    }
+
+    public function test_close_shift_logout_requires_confirmation_while_shift_is_active(): void
+    {
+        $cashier = $this->cashier();
+        app(OpenShiftAction::class)->handle($cashier, 100000);
+
+        Livewire::actingAs($cashier)
+            ->test(CloseShift::class)
+            ->call('requestLogout')
+            ->assertSet('logoutConfirmationOpen', true)
+            ->assertSee('Shift belum ditutup')
+            ->call('closeLogoutConfirmation')
+            ->assertSet('logoutConfirmationOpen', false);
+    }
+
     public function test_non_cashier_cannot_open_shift(): void
     {
         $manager = $this->cashier(['role' => UserRole::Manager]);

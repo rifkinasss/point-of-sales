@@ -8,8 +8,10 @@ use App\Actions\Shift\CloseShiftAction;
 use App\Enums\ShiftStatus;
 use App\Enums\UserRole;
 use App\Models\CashierShift;
+use App\Models\Payment;
 use App\Models\User;
 use App\Services\CashBalanceCalculator;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 
@@ -30,6 +32,12 @@ class CloseShift extends Component
     public bool $movementModalOpen = false;
 
     public ?string $message = null;
+
+    public bool $closed = false;
+
+    public ?CashierShift $closedShift = null;
+
+    public bool $logoutConfirmationOpen = false;
 
     public function mount(): void
     {
@@ -55,7 +63,7 @@ class CloseShift extends Component
         ]);
 
         try {
-            app(CloseShiftAction::class)->handle(
+            $this->closedShift = app(CloseShiftAction::class)->handle(
                 $this->shift,
                 $this->currentUser(),
                 (int) $this->closingCashActual,
@@ -72,7 +80,10 @@ class CloseShift extends Component
         }
 
         session()->put('cashier.shift_closed_at', now()->toIso8601String());
-        $this->redirect('/cashier/open-shift');
+        $this->closed = true;
+        $this->shift = null;
+        $this->movementModalOpen = false;
+        $this->logoutConfirmationOpen = false;
     }
 
     public function recordCashMovement(): void
@@ -122,6 +133,63 @@ class CloseShift extends Component
     {
         $this->resetValidation();
         $this->movementModalOpen = false;
+    }
+
+    public function requestLogout(): void
+    {
+        if ($this->currentShift()) {
+            $this->logoutConfirmationOpen = true;
+
+            return;
+        }
+
+        $this->logoutConfirmationOpen = false;
+    }
+
+    public function closeLogoutConfirmation(): void
+    {
+        $this->logoutConfirmationOpen = false;
+    }
+
+    public function getActualCashProperty(): ?int
+    {
+        $value = (string) $this->closingCashActual;
+
+        return $value !== '' && ctype_digit($value) ? (int) $value : null;
+    }
+
+    public function getVarianceProperty(): ?int
+    {
+        return $this->actualCash === null ? null : $this->actualCash - $this->cashSummary['expected'];
+    }
+
+    public function getCanCloseProperty(): bool
+    {
+        return $this->shift !== null
+            && $this->actualCash !== null
+            && ($this->variance === 0 || trim($this->closingNote) !== '');
+    }
+
+    /** @return Collection<int, \App\Models\CashMovement> */
+    public function getCashMovementsProperty(): Collection
+    {
+        if (! $this->shift) {
+            return new Collection;
+        }
+
+        $movements = $this->shift->cashMovements()->latest('created_at')->get();
+        $paymentIds = $movements
+            ->where('reference_type', 'payment')
+            ->pluck('reference_id')
+            ->filter()
+            ->values();
+        $invoices = $paymentIds->isEmpty()
+            ? collect()
+            : Payment::query()->with('sale')->whereIn('id', $paymentIds)->get()->keyBy('id');
+
+        return $movements->each(function ($movement) use ($invoices): void {
+            $movement->setAttribute('reference_invoice', $invoices->get($movement->reference_id)?->sale?->invoice_number);
+        });
     }
 
     /** @return array{opening: int, sales: int, cashIn: int, refunds: int, cashOut: int, expected: int} */
