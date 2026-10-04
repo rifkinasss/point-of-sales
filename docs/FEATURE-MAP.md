@@ -46,5 +46,5 @@ Payment tetap `pending` pada level sale sampai `sum(completed payments) == grand
 |---|---|---|
 | Admin | Filament back-office | `/admin` |
 | Cashier | Livewire operational workspace | `/cashier/*` |
-| Manager | Livewire overview baseline | `/manager` |
+| Manager | Livewire dashboard, transaction monitoring, shift and cash reconciliation | `/manager`, `/manager/transactions`, `/manager/shifts`, `/manager/cash` |
 | Owner | Livewire executive overview baseline | `/owner` |

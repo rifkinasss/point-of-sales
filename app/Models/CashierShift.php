@@ -4,16 +4,18 @@ namespace App\Models;
 
 use App\Enums\ShiftStatus;
 use App\Models\Concerns\BelongsToCurrentStore;
+use App\Models\Concerns\HasPublicId;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CashierShift extends Model
 {
-    use BelongsToCurrentStore;
+    use BelongsToCurrentStore, HasPublicId;
 
     protected $fillable = [
         'store_id',
+        'public_id',
         'user_id',
         'status',
         'opened_at',
@@ -43,6 +45,11 @@ class CashierShift extends Model
     public function cashier(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function store(): BelongsTo
+    {
+        return $this->belongsTo(Store::class);
     }
 
     public function closedBy(): BelongsTo

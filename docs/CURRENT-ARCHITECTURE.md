@@ -40,7 +40,7 @@ Only `AdminPanelProvider` remains registered. Cashier, manager, and owner entry 
 - Persistence: `app/Models/` dan `database/migrations/`.
 - UI back-office: `app/Filament/` and `resources/views/filament/` through the admin panel.
 - Cashier UI: `app/Livewire/Cashier/`, `app/Livewire/Pos/Checkout.php`, and `resources/views/livewire/`.
-- Manager/owner read-only UI: `app/Livewire/Manager/`, `app/Livewire/Owner/`, and `app/Queries/`.
+- Manager/owner read-only UI: `app/Livewire/Manager/`, `app/Livewire/Owner/`, and `app/Queries/`. Manager monitoring includes `/manager/transactions`, `/manager/shifts`, and `/manager/cash`.
 
 Dokumen ini hanya mencatat struktur yang ditemukan; belum menetapkan arsitektur refactor final.
 
@@ -74,6 +74,7 @@ POS browser/Livewire surfaces use non-sequential identifiers:
 | Category | `public_id` ULID | Category filter state |
 | Customer | `public_id` ULID | Customer selector and cart state |
 | Modifier group/value | `public_id` ULID | Modifier selection state |
+| Cashier shift | `public_id` ULID | Manager shift monitoring route |
 | Redeem code | immutable promotion code | Promotion input; no internal redeem-code ID in Livewire state |
 
 All public identifier lookups still enforce authentication, cashier ownership, and current-store scope. ULID/unpredictability reduces enumeration risk but is not an authorization mechanism. Filament admin internals may continue to use numeric record IDs where the framework requires them.
@@ -93,3 +94,5 @@ expected cash = opening + cash sales + cash in - cash refunds - cash out
 ```
 
 Closing menyimpan `expected_cash`, `closing_cash_actual`, dan `cash_difference` pada shift. `CLOSING` bukan tipe movement; snapshot close tetap terpisah dari ledger.
+
+Manager shift and cash views are read-only and store-scoped. Shift monitoring uses `CashBalanceCalculator`, while lifecycle status (active/closed) remains separate from reconciliation status (matching/short/over/not reconciled).

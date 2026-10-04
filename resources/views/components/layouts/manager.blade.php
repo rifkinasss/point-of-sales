@@ -49,7 +49,11 @@
                 <a class="nl-focus relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-bold {{ ($activeNav ?? '') === 'transactions' ? 'bg-primary-soft text-primary before:absolute before:left-0 before:h-6 before:w-1 before:rounded-r-full before:bg-primary' : 'text-muted hover:bg-background hover:text-foreground' }}"
                     href="{{ route('manager.transactions.index') }}"><x-filament::icon icon="heroicon-o-receipt-percent"
                         class="size-5" aria-hidden="true" />Transaksi</a>
-                @foreach ([['Shift Kasir', 'heroicon-o-clock'], ['Kas & Rekonsiliasi', 'heroicon-o-banknotes'], ['Produk & Stok', 'heroicon-o-cube'], ['Pelanggan', 'heroicon-o-users'], ['Promo', 'heroicon-o-tag'], ['Laporan', 'heroicon-o-chart-bar-square']] as [$label, $icon])
+                @foreach ([['Shift Kasir', 'heroicon-o-clock', 'manager.shifts.index', 'shifts'], ['Kas & Rekonsiliasi', 'heroicon-o-banknotes', 'manager.cash.index', 'cash'], ['Produk & Stok', 'heroicon-o-cube', null, null], ['Pelanggan', 'heroicon-o-users', null, null], ['Promo', 'heroicon-o-tag', null, null], ['Laporan', 'heroicon-o-chart-bar-square', null, null]] as [$label, $icon, $route, $nav])
+                    @if ($route)
+                        <a class="nl-focus relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-bold {{ ($activeNav ?? '') === $nav ? 'bg-primary-soft text-primary before:absolute before:left-0 before:h-6 before:w-1 before:rounded-r-full before:bg-primary' : 'text-muted hover:bg-background hover:text-foreground' }}" href="{{ route($route) }}"><x-filament::icon icon="{{ $icon }}" class="size-5" aria-hidden="true" /><span>{{ $label }}</span></a>
+                        @continue
+                    @endif
                     <span
                         class="flex cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted"
                         title="Modul manager ini belum tersedia"><x-filament::icon icon="{{ $icon }}"
