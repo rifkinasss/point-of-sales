@@ -40,7 +40,7 @@ Only `AdminPanelProvider` remains registered. Cashier, manager, and owner entry 
 - Persistence: `app/Models/` dan `database/migrations/`.
 - UI back-office: `app/Filament/` and `resources/views/filament/` through the admin panel.
 - Cashier UI: `app/Livewire/Cashier/`, `app/Livewire/Pos/Checkout.php`, and `resources/views/livewire/`.
-- Manager/owner read-only UI: `app/Livewire/Manager/`, `app/Livewire/Owner/`, and `app/Queries/`. Manager monitoring includes `/manager/transactions`, `/manager/shifts`, `/manager/cash`, and `/manager/products`; product adjustment is the only controlled Manager inventory mutation.
+- Manager/owner read-only UI: `app/Livewire/Manager/`, `app/Livewire/Owner/`, and `app/Queries/`. Manager monitoring includes `/manager/transactions`, `/manager/shifts`, `/manager/cash`, `/manager/products`, and `/manager/customers`; customer profile edits are limited to contact fields.
 
 Dokumen ini hanya mencatat struktur yang ditemukan; belum menetapkan arsitektur refactor final.
 
@@ -76,6 +76,7 @@ POS browser/Livewire surfaces use non-sequential identifiers:
 | Modifier group/value | `public_id` ULID | Modifier selection state |
 | Cashier shift | `public_id` ULID | Manager shift monitoring route |
 | Product | `public_id` ULID | Manager product routes and browser state |
+| Customer | `public_id` ULID | Manager customer routes and browser state |
 | Redeem code | immutable promotion code | Promotion input; no internal redeem-code ID in Livewire state |
 
 All public identifier lookups still enforce authentication, cashier ownership, and current-store scope. ULID/unpredictability reduces enumeration risk but is not an authorization mechanism. Filament admin internals may continue to use numeric record IDs where the framework requires them.

@@ -21,6 +21,7 @@ class Customer extends Model
             'is_active' => 'boolean',
             'points' => 'integer',
             'birth_date' => 'date',
+            'last_transaction_at' => 'datetime',
         ];
     }
 
