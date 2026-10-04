@@ -1,4 +1,5 @@
 @import '../../../vendor/filament/filament/resources/css/theme.css';
+@import '../../../resources/css/naslabs-tokens.css';
 
 @source '../../../app/Filament/**/*';
 @source '../../../app/Livewire/**/*';
@@ -8,12 +9,12 @@
 
 /* Admin has a distinct control-centre treatment while the other panels remain neutral. */
 .fi-panel-admin .fi-topbar {
-    background: linear-gradient(105deg, #312e81 0%, #4338ca 52%, #4f46e5 100%);
+    background: var(--nl-primary);
     border-bottom-color: rgb(129 140 248 / 0.3);
 }
 
 .fi-panel-admin .fi-sidebar {
-    background: linear-gradient(180deg, #17142f 0%, #211d4f 54%, #302b70 100%);
+    background: #0f172a;
 }
 
 .fi-panel-admin .fi-sidebar-header {
@@ -44,7 +45,7 @@
 
 .fi-panel-admin .fi-sidebar-item.fi-active > .fi-sidebar-item-btn {
     border: 1px solid rgb(165 180 252 / 0.32);
-    background: linear-gradient(100deg, #4f46e5, #6366f1) !important;
+    background: var(--nl-primary) !important;
     box-shadow: 0 8px 18px rgb(15 23 42 / 0.28), inset 3px 0 0 #c7d2fe;
 }
 
@@ -73,7 +74,7 @@
     position: relative;
     overflow: hidden;
     border-color: rgb(129 140 248 / 0.2);
-    background: linear-gradient(145deg, #ffffff, #f8faff);
+    background: #ffffff;
     box-shadow: 0 10px 24px rgb(30 41 59 / 0.08);
 }
 
@@ -89,7 +90,7 @@
 
 .dark .fi-panel-admin .fi-wi-stats-overview-stat {
     border-color: rgb(129 140 248 / 0.24);
-    background: linear-gradient(145deg, rgb(30 41 59 / 0.96), rgb(15 23 42 / 0.96));
+    background: rgb(15 23 42 / 0.96);
     box-shadow: none;
 }
 
@@ -280,7 +281,7 @@ body.fi-panel-cashier:has(.pos-screen) .fi-page {
 }
 
 .fi-panel-cashier .pos-cart-panel > .fi-section-header {
-    background: linear-gradient(135deg, #312e81, #4f46e5);
+    background: #1e3a8a;
     color: white;
 }
 
@@ -299,7 +300,7 @@ body.fi-panel-cashier:has(.pos-screen) .fi-page {
 .fi-panel-cashier .pos-pay-button {
     min-height: 3.25rem;
     border-radius: 0.9rem;
-    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    background: var(--nl-primary);
     box-shadow: 0 12px 22px rgb(79 70 229 / 0.25);
 }
 

@@ -1,0 +1,12 @@
+:root {
+    --nl-primary: #3b52e2;
+    --nl-primary-hover: #1d4ed8;
+    --nl-foreground: #0f172a;
+    --nl-secondary: #1e293b;
+    --nl-muted: #64748b;
+    --nl-background: #f8fafc;
+    --nl-surface: #ffffff;
+    --nl-border: #e2e8f0;
+    --nl-primary-soft: #eff6ff;
+    --nl-primary-soft-strong: #dbeafe;
+}

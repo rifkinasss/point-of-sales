@@ -1,5 +1,5 @@
 <div
-    class="min-h-screen bg-[radial-gradient(circle_at_top_left,_#eef2ff,_transparent_34rem)] px-4 py-5 sm:px-6 lg:px-8 dark:bg-slate-950"
+    class="nl-page min-h-screen px-4 py-5 sm:px-6 lg:px-8"
     x-data
     x-init="$nextTick(() => $refs.openingCash?.focus())"
     x-on:keydown.ctrl.enter.window.prevent="$refs.openShiftForm.requestSubmit()"
