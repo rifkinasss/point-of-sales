@@ -71,9 +71,14 @@ class Sale extends Model
         return $this->hasMany(SaleItem::class);
     }
 
-    public function payment(): HasOne
+    public function payments(): HasMany
     {
-        return $this->hasOne(Payment::class);
+        return $this->hasMany(Payment::class);
+    }
+
+    public function latestPayment(): HasOne
+    {
+        return $this->hasOne(Payment::class)->latestOfMany();
     }
 
     public function redeemCode(): BelongsTo

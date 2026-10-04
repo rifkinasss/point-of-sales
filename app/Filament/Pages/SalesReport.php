@@ -58,6 +58,7 @@ class SalesReport extends Page
             'payments' => Payment::query()
                 ->selectRaw('method, COUNT(*) as transaction_count, SUM(amount_due) as total')
                 ->whereIn('sale_id', $saleIds)
+                ->where('status', \App\Enums\PaymentStatus::Completed)
                 ->groupBy('method')
                 ->orderByDesc('total')
                 ->get(),
@@ -69,7 +70,7 @@ class SalesReport extends Page
                 ->limit(10)
                 ->get(),
             'sales' => (clone $sales)
-                ->with(['cashier', 'payment'])
+                ->with(['cashier', 'payments'])
                 ->latest('completed_at')
                 ->limit(15)
                 ->get(),
@@ -85,8 +86,8 @@ class SalesReport extends Page
 
     public function downloadCsv(): StreamedResponse
     {
-        $sales = $this->paidSalesQuery()->with(['cashier', 'payment', 'customer'])->latest('completed_at')->get();
-        return response()->streamDownload(function () use ($sales): void { $out = fopen('php://output', 'w'); fputcsv($out, ['Invoice', 'Waktu', 'Kasir', 'Member', 'Metode', 'Total']); foreach ($sales as $sale) fputcsv($out, [$sale->invoice_number, $sale->completed_at?->format('Y-m-d H:i:s'), $sale->cashier?->name, $sale->customer?->name, $sale->payment?->method?->value, $sale->grand_total]); fclose($out); }, 'laporan-penjualan-'.$this->dateFrom.'-'.$this->dateUntil.'.csv');
+        $sales = $this->paidSalesQuery()->with(['cashier', 'payments', 'customer'])->latest('completed_at')->get();
+        return response()->streamDownload(function () use ($sales): void { $out = fopen('php://output', 'w'); fputcsv($out, ['Invoice', 'Waktu', 'Kasir', 'Member', 'Metode', 'Total']); foreach ($sales as $sale) fputcsv($out, [$sale->invoice_number, $sale->completed_at?->format('Y-m-d H:i:s'), $sale->cashier?->name, $sale->customer?->name, $sale->payments->pluck('method')->map(fn ($method) => $method->value)->unique()->implode(', '), $sale->grand_total]); fclose($out); }, 'laporan-penjualan-'.$this->dateFrom.'-'.$this->dateUntil.'.csv');
     }
 
     private function paidSalesQuery(): Builder

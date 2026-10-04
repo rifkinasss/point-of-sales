@@ -14,10 +14,10 @@ Status capability berdasarkan source saat Phase 0.
 | Void transaksi pending | Available | `VoidSaleAction`, Sales table action; hanya `pending_payment -> voided`, role admin/owner/manager |
 | Cash register ledger | Available | `CashMovement`, `CashBalanceCalculator`, opening/payment/refund/cash in/cash out integration |
 | Partial return | Missing | Tidak ditemukan action atau UI partial return |
-| Split payment | Missing | `payments.sale_id` unique; satu payment per sale |
+| Split payment | Available | Sale 1:N Payment, `AddPaymentAction`, dan PaymentPage mendukung alokasi bertahap |
 | Purchasing dan receiving | Partial | Purchase resources/actions tersedia; workflow item perlu validasi lebih lanjut |
 | Sales report | Partial | Report page tersedia, filter dan role coverage belum lengkap |
-| Cash movement ledger | Missing | Tidak ada cash movement model/table/action |
+| Cash movement ledger | Available | `CashMovement` dan shift reconciliation tersedia |
 | Redeem Code | Keep | Dipakai checkout, payment, provider, dan migrations |
 | Announcements | Needs verification | Provider, trait, config, view, dan migrations aktif |
 | Account switching | Keep | Plugin dan linked-account migrations aktif pada panel |
@@ -31,6 +31,8 @@ PENDING_PAYMENT -> PAID -> REFUNDED
 ```
 
 Transition lain ditolak oleh `SaleStatus::canTransitionTo()` dan `Sale::transitionTo()`.
+
+Payment tetap `pending` pada level sale sampai `sum(completed payments) == grand_total`; overpayment ditolak.
 
 ## Cash movement types
 

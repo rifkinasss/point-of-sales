@@ -30,8 +30,9 @@ Panel discovery berada di `app/Providers/Filament/*PanelProvider.php`. Checkout 
  - Sale: `app/Actions/Sale/`.
  - Sale lifecycle: `SaleStatus` mengizinkan `pending_payment -> paid`, `pending_payment -> voided`, dan `paid -> refunded`; transition dijaga oleh `Sale::transitionTo()`.
  - Sale calculation: `app/Services/SaleCalculator.php` menghitung ulang item dari master product/modifier dan reward redeem code di server. `PosCheckout` hanya menampilkan preview.
-- Payment/inventory: `ProcessPaymentAction` mengunci sale dan shift, membuat satu payment, lalu mengurangi inventory setelah payment tervalidasi.
+- Payment/inventory: `AddPaymentAction` mengunci sale dan shift, mencatat satu allocation payment, dan memanggil `CompleteSalePaymentAction` hanya saat total payment terpenuhi sebelum inventory dikurangi.
 - Cash register: `CashMovement` adalah append-only application ledger untuk opening, cash sale, refund cash, cash in, dan cash out. `CashBalanceCalculator` menjadi sumber expected cash.
+- Payment: `Sale 1:N Payment`. `PaymentAllocator` menghitung completed payment, total paid, remaining due, dan breakdown method. Sale baru menjadi `paid` setelah completed payments tepat memenuhi grand total.
  - Void/refund: `VoidSaleAction` hanya menerima pending sale; `RefundSaleAction` hanya menerima paid sale dan membalik stock movement secara atomic.
  - Invoice: `InvoiceNumberGenerator` menghasilkan identifier publik `POS-YYYYMMDD-ULID`; primary key sale tetap terpisah dan invoice memiliki unique constraint.
 - Inventory: `app/Actions/Inventory/`.
@@ -49,7 +50,7 @@ Formula authoritative: gross subtotal - item discount total - promotion discount
 
 ## Payment invariant
 
-Satu sale memiliki maksimal satu payment melalui unique constraint `payments.sale_id`. Sale menjadi `paid` hanya setelah payment dan stock movement berhasil dalam transaction yang sama. Retry payment pada sale non-pending ditolak.
+Satu sale dapat memiliki beberapa payment completed melalui `payments.sale_id`; totalnya tidak boleh melebihi grand total. Sale menjadi `paid` hanya setelah total allocation dan stock movement berhasil dalam transaction yang sama. Retry payment pada sale non-pending ditolak.
 
 ## Cash reconciliation
 

@@ -2,7 +2,8 @@
 
 namespace App\Filament\Cashier\Pages;
 
-use App\Actions\Sale\ProcessPaymentAction;
+use App\Actions\Sale\AddPaymentAction;
+use App\Enums\PaymentStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\SaleStatus;
 use App\Models\Sale;
@@ -31,6 +32,8 @@ class PaymentPage extends Page
 
     public int $amountReceived = 0;
 
+    public int $amountToPay = 0;
+
     public ?string $referenceNumber = null;
 
     /** Pencarian nama, telepon, atau kode member tanpa memuat seluruh member. */
@@ -43,7 +46,7 @@ class PaymentPage extends Page
     {
         $saleId = (int) request()->integer('sale');
         $this->sale = Sale::query()
-            ->with(['items', 'customer'])
+            ->with(['items', 'customer', 'payments'])
             ->whereKey($saleId)
             ->where('cashier_id', $this->currentUser()->id)
             ->where('status', SaleStatus::PendingPayment)
@@ -57,12 +60,14 @@ class PaymentPage extends Page
         }
 
         $this->amountReceived = $this->sale->grand_total;
+        $this->amountToPay = $this->sale->grand_total;
     }
 
     public function updatedMethod(): void
     {
         if ($this->sale && $this->method !== PaymentMethod::Cash->value) {
-            $this->amountReceived = $this->sale->grand_total;
+            $this->amountToPay = $this->remainingDue();
+            $this->amountReceived = $this->amountToPay;
         }
     }
 
@@ -148,10 +153,11 @@ class PaymentPage extends Page
             throw ValidationException::withMessages(['sale' => 'Transaksi tidak ditemukan.']);
         }
 
-        $sale = app(ProcessPaymentAction::class)->handle(
+        $sale = app(AddPaymentAction::class)->handle(
             $this->sale,
             $this->currentUser(),
             PaymentMethod::from($this->method),
+            $this->amountToPay,
             $this->amountReceived,
             $this->referenceNumber,
         );
@@ -159,10 +165,34 @@ class PaymentPage extends Page
         Notification::make()
             ->success()
             ->title('Pembayaran berhasil')
-            ->body("Invoice {$sale->invoice_number} telah lunas.")
+            ->body($sale->status === \App\Enums\SaleStatus::Paid
+                ? "Invoice {$sale->invoice_number} telah lunas."
+                : "Pembayaran dicatat. Sisa tagihan Rp ".number_format($this->remainingDue($sale), 0, ',', '.').".")
             ->send();
 
-        $this->redirect("/cashier/receipt-page?sale={$sale->id}");
+        if ($sale->status === \App\Enums\SaleStatus::Paid) {
+            $this->redirect("/cashier/receipt-page?sale={$sale->id}");
+        } else {
+            $this->sale = $sale->load('payments');
+            $this->amountToPay = $this->remainingDue();
+            $this->amountReceived = $this->amountToPay;
+            $this->referenceNumber = null;
+        }
+    }
+
+    public function remainingDue(?Sale $sale = null): int
+    {
+        $sale ??= $this->sale;
+
+        if (! $sale) {
+            return 0;
+        }
+
+        $paid = $sale->relationLoaded('payments')
+            ? $sale->payments->where('status', PaymentStatus::Completed)->sum('amount_due')
+            : $sale->payments()->where('status', PaymentStatus::Completed)->sum('amount_due');
+
+        return max(0, $sale->grand_total - (int) $paid);
     }
 
     protected function getHeaderActions(): array

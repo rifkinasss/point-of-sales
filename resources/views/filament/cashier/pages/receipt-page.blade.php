@@ -26,9 +26,9 @@
                         <div class="flex justify-between"><span>Diskon</span><span>-Rp {{ number_format($sale->item_discount_total + $sale->transaction_discount_total, 0, ',', '.') }}</span></div>
                     @endif
                     <div class="flex justify-between border-t border-gray-200 pt-3 text-base font-bold dark:border-white/10"><span>Total</span><span>Rp {{ number_format($sale->grand_total, 0, ',', '.') }}</span></div>
-                    <div class="flex justify-between"><span>Pembayaran</span><span>{{ ucfirst(str_replace('_', ' ', $sale->payment->method->value)) }}</span></div>
-                    @if ($sale->payment->change_amount > 0)
-                        <div class="flex justify-between"><span>Kembalian</span><span>Rp {{ number_format($sale->payment->change_amount, 0, ',', '.') }}</span></div>
+                    <div class="flex justify-between"><span>Pembayaran</span><span>{{ $sale->payments->pluck('method')->map(fn ($method) => ucfirst(str_replace('_', ' ', $method->value)))->unique()->implode(', ') }}</span></div>
+                    @if ($sale->payments->sum('change_amount') > 0)
+                        <div class="flex justify-between"><span>Kembalian</span><span>Rp {{ number_format($sale->payments->sum('change_amount'), 0, ',', '.') }}</span></div>
                     @endif
                 </div>
 

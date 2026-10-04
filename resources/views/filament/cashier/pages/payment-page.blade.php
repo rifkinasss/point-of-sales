@@ -17,6 +17,10 @@
                     <span>Total</span>
                     <span>Rp {{ number_format($sale->grand_total, 0, ',', '.') }}</span>
                 </div>
+                <div class="mt-2 flex justify-between text-sm text-gray-500">
+                    <span>Sisa pembayaran</span>
+                    <span>Rp {{ number_format($this->remainingDue(), 0, ',', '.') }}</span>
+                </div>
             </x-filament::section>
 
             <x-filament::section>
@@ -66,11 +70,20 @@
                     </div>
 
                     <div>
-                        <label class="mb-2 block text-sm font-medium" for="amount-received">Uang diterima</label>
+                        <label class="mb-2 block text-sm font-medium" for="amount-to-pay">Nominal pembayaran</label>
                         <x-filament::input.wrapper prefix="Rp">
-                            <x-filament::input id="amount-received" min="0" type="number" wire:model="amountReceived" />
+                            <x-filament::input id="amount-to-pay" min="1" type="number" wire:model="amountToPay" />
                         </x-filament::input.wrapper>
                     </div>
+
+                    @if ($method === 'cash')
+                        <div>
+                            <label class="mb-2 block text-sm font-medium" for="amount-received">Uang diterima</label>
+                            <x-filament::input.wrapper prefix="Rp">
+                                <x-filament::input id="amount-received" min="0" type="number" wire:model="amountReceived" />
+                            </x-filament::input.wrapper>
+                        </div>
+                    @endif
 
                     @if ($method !== 'cash')
                         <div>
@@ -81,9 +94,9 @@
                         </div>
                     @endif
 
-                    @if ($method === 'cash' && $amountReceived >= $sale->grand_total)
+                    @if ($method === 'cash' && $amountReceived >= $amountToPay)
                         <div class="rounded-lg bg-gray-50 p-3 text-sm dark:bg-white/5">
-                            Kembalian: <strong>Rp {{ number_format($amountReceived - $sale->grand_total, 0, ',', '.') }}</strong>
+                            Kembalian: <strong>Rp {{ number_format($amountReceived - $amountToPay, 0, ',', '.') }}</strong>
                         </div>
                     @endif
 

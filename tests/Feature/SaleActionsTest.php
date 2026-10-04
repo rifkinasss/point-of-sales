@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Actions\Inventory\RecordInitialStockAction;
 use App\Actions\Sale\CreatePendingSaleAction;
+use App\Actions\Sale\AddPaymentAction;
 use App\Actions\Sale\ProcessPaymentAction;
 use App\Actions\Sale\RefundSaleAction;
 use App\Actions\Sale\VoidSaleAction;
@@ -13,6 +14,7 @@ use App\Enums\PaymentMethod;
 use App\Enums\SaleStatus;
 use App\Enums\StockMovementType;
 use App\Enums\CashMovementType;
+use App\Enums\PaymentStatus;
 use App\Enums\UserRole;
 use App\Models\CashierShift;
 use App\Models\Customer;
@@ -113,7 +115,7 @@ class SaleActionsTest extends TestCase
 
         $this->assertSame(SaleStatus::Paid, $paidSale->status);
         $this->assertSame(20000, $paidSale->grand_total);
-        $this->assertSame(5000, $paidSale->payment->change_amount);
+        $this->assertSame(5000, $paidSale->payments->first()->change_amount);
         $this->assertSame(8, $product->inventory()->value('quantity'));
         $this->assertDatabaseHas('stock_movements', [
             'product_id' => $product->id,
@@ -168,6 +170,62 @@ class SaleActionsTest extends TestCase
             'shift_id' => $shift->id,
             'type' => CashMovementType::Sale->value,
         ]);
+    }
+
+    public function test_sale_accepts_split_payment_and_remains_pending_until_fully_allocated(): void
+    {
+        [$cashier, $product, $shift] = $this->prepareSaleContext(10);
+        $sale = app(CreatePendingSaleAction::class)->handle($shift, $cashier, [
+            ['product_id' => $product->id, 'quantity' => 1],
+        ]);
+
+        $partial = app(AddPaymentAction::class)->handle($sale, $cashier, PaymentMethod::Cash, 4000);
+
+        $this->assertSame(SaleStatus::PendingPayment, $partial->status);
+        $this->assertSame(4000, $partial->payments->sum('amount_due'));
+        $this->assertSame(10, $product->inventory()->value('quantity'));
+
+        $paid = app(AddPaymentAction::class)->handle($sale, $cashier, PaymentMethod::Qris, 6000);
+
+        $this->assertSame(SaleStatus::Paid, $paid->status);
+        $this->assertSame(10000, $paid->payments->sum('amount_due'));
+        $this->assertCount(2, $paid->payments);
+        $this->assertSame(9, $product->inventory()->value('quantity'));
+        $this->assertDatabaseCount('cash_movements', 2);
+    }
+
+    public function test_payment_cannot_exceed_remaining_due(): void
+    {
+        [$cashier, $product, $shift] = $this->prepareSaleContext(10);
+        $sale = app(CreatePendingSaleAction::class)->handle($shift, $cashier, [
+            ['product_id' => $product->id, 'quantity' => 1],
+        ]);
+
+        app(AddPaymentAction::class)->handle($sale, $cashier, PaymentMethod::Cash, 6000);
+
+        $this->expectException(ValidationException::class);
+        app(AddPaymentAction::class)->handle($sale, $cashier, PaymentMethod::Qris, 5000);
+    }
+
+    public function test_full_refund_marks_all_split_payments_refunded_and_reverses_cash_portion_only(): void
+    {
+        [$cashier, $product, $shift] = $this->prepareSaleContext(10);
+        $sale = app(CreatePendingSaleAction::class)->handle($shift, $cashier, [
+            ['product_id' => $product->id, 'quantity' => 1],
+        ]);
+        app(AddPaymentAction::class)->handle($sale, $cashier, PaymentMethod::Cash, 4000);
+        app(AddPaymentAction::class)->handle($sale, $cashier, PaymentMethod::Qris, 6000);
+
+        $return = app(RefundSaleAction::class)->handle($sale, $cashier, 'Pengembalian split payment');
+
+        $this->assertSame(2, $sale->payments()->where('status', PaymentStatus::Refunded)->count());
+        $this->assertDatabaseHas('cash_movements', [
+            'shift_id' => $shift->id,
+            'type' => CashMovementType::Refund->value,
+            'amount' => 4000,
+            'reference_id' => $return->id,
+        ]);
+        $this->assertSame(10, $product->inventory()->value('quantity'));
     }
 
     public function test_promotion_discount_is_calculated_server_side_and_reduces_grand_total(): void

@@ -52,7 +52,7 @@
         <div class="overflow-x-auto">
             <table class="w-full text-left text-sm"><thead class="bg-gray-50 text-gray-500 dark:bg-white/5"><tr><th class="p-4">Invoice</th><th class="p-4">Kasir</th><th class="p-4">Pembayaran</th><th class="p-4 text-right">Total</th><th class="p-4">Waktu</th></tr></thead><tbody class="divide-y divide-gray-100 dark:divide-white/10">
                 @forelse ($report['sales'] as $sale)
-                    <tr><td class="p-4 font-medium">{{ $sale->invoice_number }}</td><td class="p-4">{{ $sale->cashier?->name ?? '-' }}</td><td class="p-4 capitalize">{{ str($sale->payment?->method?->value ?? '-')->replace('_', ' ') }}</td><td class="p-4 text-right font-semibold">Rp {{ number_format($sale->grand_total, 0, ',', '.') }}</td><td class="p-4">{{ $sale->completed_at?->format('d M Y H:i') }}</td></tr>
+                    <tr><td class="p-4 font-medium">{{ $sale->invoice_number }}</td><td class="p-4">{{ $sale->cashier?->name ?? '-' }}</td><td class="p-4 capitalize">{{ str($sale->payments->pluck('method')->map(fn ($method) => $method->value)->unique()->implode(', ') ?: '-')->replace('_', ' ') }}</td><td class="p-4 text-right font-semibold">Rp {{ number_format($sale->grand_total, 0, ',', '.') }}</td><td class="p-4">{{ $sale->completed_at?->format('d M Y H:i') }}</td></tr>
                 @empty
                     <tr><td colspan="5" class="p-5 text-center text-gray-500">Belum ada transaksi pada periode ini.</td></tr>
                 @endforelse

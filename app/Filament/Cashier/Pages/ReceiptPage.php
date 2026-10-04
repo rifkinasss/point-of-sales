@@ -26,7 +26,7 @@ class ReceiptPage extends Page
     {
         $saleId = (int) request()->integer('sale');
         $this->sale = Sale::query()
-            ->with(['items', 'payment', 'cashier', 'customer', 'store'])
+            ->with(['items', 'payments', 'cashier', 'customer', 'store'])
             ->whereKey($saleId)
             ->where('cashier_id', $this->currentUser()->id)
             ->where('status', SaleStatus::Paid)

@@ -4,6 +4,7 @@ namespace App\Actions\Sale;
 
 use App\Enums\ProductType;
 use App\Enums\CashMovementType;
+use App\Enums\PaymentStatus;
 use App\Enums\SaleStatus;
 use App\Enums\StockMovementType;
 use App\Models\Inventory;
@@ -30,7 +31,7 @@ class RefundSaleAction
         }
 
         return DB::transaction(function () use ($sale, $user, $reason): SaleReturn {
-            $sale = Sale::query()->with('items.product', 'payment', 'cashierShift')->lockForUpdate()->findOrFail($sale->id);
+            $sale = Sale::query()->with('items.product', 'payments', 'cashierShift')->lockForUpdate()->findOrFail($sale->id);
 
             if ($sale->status !== SaleStatus::Paid) {
                 throw ValidationException::withMessages(['sale' => 'Hanya transaksi lunas yang dapat direfund.']);
@@ -103,18 +104,27 @@ class RefundSaleAction
                 ]);
             }
 
-            if ($sale->payment?->method?->isCash()) {
+            $completedPayments = $sale->payments->where('status', PaymentStatus::Completed);
+            $cashRefund = (int) $completedPayments
+                ->filter(fn ($payment): bool => $payment->method->isCash())
+                ->sum('amount_due');
+
+            if ($cashRefund > 0) {
                 CashMovement::query()->create([
                     'store_id' => $storeId,
                     'shift_id' => $sale->cashierShift?->id,
                     'user_id' => $user->id,
                     'type' => CashMovementType::Refund,
-                    'amount' => $sale->grand_total,
+                    'amount' => $cashRefund,
                     'reference_type' => 'sale_return',
                     'reference_id' => $return->id,
                     'note' => 'Refund '.$return->return_number,
                 ]);
             }
+
+            $sale->payments()
+                ->where('status', PaymentStatus::Completed)
+                ->update(['status' => PaymentStatus::Refunded, 'refunded_at' => now()]);
 
             $sale->transitionTo(SaleStatus::Refunded)->save();
             app(AuditLogger::class)->log('sale_refunded', $sale, [], ['return_number' => $return->return_number, 'reason' => $reason]);
