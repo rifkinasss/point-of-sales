@@ -24,7 +24,7 @@
 .nl-page { background: var(--nl-background); color: var(--nl-foreground); }
 .nl-surface { border: 1px solid var(--nl-border); border-radius: 0.5rem; background: var(--nl-surface); box-shadow: none; }
 .nl-focus:focus-visible { outline: 3px solid rgb(59 82 226 / 0.28); outline-offset: 2px; }
-.cashier-pos-workspace [x-cloak] { display: none !important; }
+[x-cloak] { display: none !important; }
 .dark .nl-page { background: #0f172a; color: #f8fafc; }
 .dark .nl-surface { border-color: rgb(226 232 240 / 0.14); background: #0f172a; }
 

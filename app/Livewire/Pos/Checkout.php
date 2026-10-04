@@ -160,6 +160,8 @@ class Checkout extends Component
                     : array_fill_keys($defaults, true);
             }
 
+            $this->dispatch('product-options-opened');
+
             return;
         }
 
@@ -250,6 +252,8 @@ class Checkout extends Component
             $ids = $group->values->pluck('id')->intersect($selectedValueIds)->map(fn ($id): int => (int) $id)->all();
             $this->selectedOptionValueIds[$group->id] = $group->maximum_selections === 1 ? ($ids[0] ?? null) : array_fill_keys($ids, true);
         }
+
+        $this->dispatch('product-options-opened');
     }
 
     public function selectSingleOption(int $groupId, int $valueId): void
@@ -557,6 +561,7 @@ class Checkout extends Component
         $this->customerSearch = '';
         $this->customerCardCode = '';
         $this->cancelNewMember();
+        $this->dispatch('member-created');
         Notification::make()->success()->title('Member baru berhasil dibuat.')->body("Kode kartu: {$customer->code}")->send();
     }
 

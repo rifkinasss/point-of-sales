@@ -1,4 +1,4 @@
-<div class="cashier-pos-workspace pos-screen pos-checkout-workspace nl-page" x-data x-on:keydown.window="const isEditing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(event.target.tagName) || event.target.isContentEditable; if (! isEditing && event.key === 'F2') { event.preventDefault(); $refs.productSearch.focus() } if (! isEditing && event.key === 'F8' && ! $refs.payButton.disabled) { event.preventDefault(); $refs.payButton.click() }">
+<div class="cashier-pos-workspace pos-screen pos-checkout-workspace nl-page" x-data="{ customerOpen: false, adjustmentsOpen: false, modifierOpen: false, memberOpen: false, lastTrigger: null, closePanel(name) { this[name] = false; this.$nextTick(() => this.lastTrigger?.focus()); }, rememberTrigger(element) { this.lastTrigger = element; } }" x-on:keydown.window="const isEditing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(event.target.tagName) || event.target.isContentEditable; if (! isEditing && event.key === 'F2') { event.preventDefault(); $refs.productSearch.focus() } if (! isEditing && event.key === 'F8' && ! $refs.payButton.disabled) { event.preventDefault(); $refs.payButton.click() }" x-on:keydown.escape.window="if (modifierOpen) { modifierOpen = false; $wire.cancelProductOptions() } else if (memberOpen) { memberOpen = false; $wire.cancelNewMember() } else if (adjustmentsOpen) { closePanel('adjustmentsOpen') } else if (customerOpen) { closePanel('customerOpen') }" x-on:product-options-opened.window="modifierOpen = true; $nextTick(() => $refs.modifierDialog?.focus())" x-on:member-created.window="memberOpen = false; customerOpen = false">
         <header class="pos-workstation-header mx-auto w-full max-w-[1440px]">
             <div class="flex min-w-0 items-center gap-3">
                 <span class="grid size-9 shrink-0 place-items-center rounded-lg bg-primary text-sm font-black text-white">N</span>
@@ -40,20 +40,25 @@
         <x-filament::section class="pos-cart-panel lg:sticky lg:top-5">
             <x-slot name="heading"><span class="flex items-center justify-between"><span>PESANAN</span><span class="rounded-md bg-primary-soft px-2.5 py-1 text-xs font-bold text-primary">{{ count($cart) }} item</span></span></x-slot>
 
-            <div class="mb-4" x-data="{ customerOpen: false }">
-                <div class="mb-2 flex items-center justify-between gap-3"><div><p class="text-xs font-semibold uppercase tracking-wide text-muted">Pelanggan</p>@if ($selectedCustomer = $this->selectedCustomer)<p class="mt-0.5 truncate text-sm font-bold">{{ $selectedCustomer->name }}</p>@else<p class="mt-0.5 text-sm font-semibold text-secondary">Walk-in Customer</p>@endif</div><button class="nl-focus min-h-11 rounded-md px-3 text-xs font-bold text-primary hover:bg-primary-soft" type="button" x-on:click="customerOpen = ! customerOpen">Ubah</button></div>
-                <div x-show="customerOpen" x-cloak x-transition.opacity.duration.150ms>
-                <div class="mb-1 flex items-center justify-between gap-2"><label class="block text-xs text-muted">Cari pelanggan atau scan kartu</label><button class="nl-focus min-h-11 rounded-md px-2 text-xs font-bold text-primary hover:bg-primary-soft" type="button" wire:click="openNewMemberModal">+ Member baru</button></div>
+            <div class="mb-4">
+                <div class="mb-2 flex items-center justify-between gap-3"><div><p class="text-xs font-semibold uppercase tracking-wide text-muted">Pelanggan</p>@if ($selectedCustomer = $this->selectedCustomer)<p class="mt-0.5 truncate text-sm font-bold">{{ $selectedCustomer->name }}</p>@else<p class="mt-0.5 text-sm font-semibold text-secondary">Walk-in Customer</p>@endif</div><button x-ref="customerTrigger" class="nl-focus min-h-11 rounded-md px-3 text-xs font-bold text-primary hover:bg-primary-soft" type="button" x-on:click="rememberTrigger($event.currentTarget); customerOpen = true; $nextTick(() => $refs.customerSearch?.focus())">Ubah</button></div>
+                <div x-show="customerOpen" x-cloak x-transition.opacity.duration.150ms class="fixed inset-0 z-50 bg-gray-950/30" x-on:click="closePanel('customerOpen')" role="presentation">
+                    <aside class="absolute inset-y-0 right-0 flex w-full max-w-md flex-col border-l border-border bg-surface p-5 shadow-2xl dark:border-white/10 dark:bg-gray-900" x-on:click.stop role="dialog" aria-modal="true" aria-labelledby="customer-selector-title">
+                        <div class="flex items-start justify-between gap-4"><div><p class="text-xs font-bold uppercase tracking-wide text-primary">PELANGGAN</p><h2 id="customer-selector-title" class="mt-1 text-xl font-black">Pilih pelanggan</h2></div><button class="nl-focus min-h-11 min-w-11 rounded-lg p-2 text-muted hover:bg-gray-100 dark:hover:bg-white/10" type="button" x-on:click="closePanel('customerOpen')" aria-label="Tutup pilih pelanggan"><x-filament::icon icon="heroicon-o-x-mark" class="size-5" /></button></div>
+                        <div class="mt-5 flex-1 overflow-y-auto">
+                <div class="mb-1 flex items-center justify-between gap-2"><label class="block text-xs text-muted">Cari pelanggan atau scan kartu</label><button class="nl-focus min-h-11 rounded-md px-2 text-xs font-bold text-primary hover:bg-primary-soft" type="button" wire:click="openNewMemberModal" x-on:click="memberOpen = true">+ Member baru</button></div>
                 @if ($selectedCustomer = $this->selectedCustomer)
                     <div class="flex items-center justify-between gap-3 rounded-lg border border-primary-soft-strong bg-primary-soft p-3"><div class="min-w-0"><p class="truncate text-sm font-bold">{{ $selectedCustomer->name }}</p><p class="text-xs text-primary">{{ $selectedCustomer->code }} · {{ $selectedCustomer->points }} poin</p></div><button class="nl-focus min-h-11 rounded-md px-2 text-xs font-bold text-danger-600 hover:bg-red-50" type="button" wire:click="clearCustomer">Ganti</button></div>
                 @else
                     <div class="space-y-2"><x-filament::input.wrapper><x-filament::input x-ref="customerSearch" wire:model.live.debounce.250ms="customerSearch" placeholder="Cari nama, telepon, atau kode member" type="search" /></x-filament::input.wrapper><div class="flex gap-2"><x-filament::input.wrapper class="min-w-0 flex-1"><x-filament::input wire:model="customerCardCode" wire:keydown.enter.prevent="scanCustomerCard" placeholder="Scan kartu member" /></x-filament::input.wrapper><x-filament::button color="gray" icon="heroicon-o-qr-code" type="button" wire:click="scanCustomerCard">Scan</x-filament::button></div></div>
                     @if ($this->customerMatches->isNotEmpty())
-                        <div class="mt-2 max-h-40 divide-y overflow-y-auto rounded-lg border border-border bg-surface">@foreach ($this->customerMatches as $customer)<button class="nl-focus flex min-h-11 w-full items-center justify-between gap-3 p-3 text-left hover:bg-primary-soft" type="button" wire:click="selectCustomer({{ $customer->id }})"><span><span class="block text-sm font-bold">{{ $customer->name }}</span><span class="block text-xs text-muted">{{ $customer->code }} @if($customer->phone) · {{ $customer->phone }} @endif</span></span><span class="text-xs font-bold text-amber-600">{{ $customer->points }} poin</span></button>@endforeach</div>
+                        <div class="mt-2 max-h-40 divide-y overflow-y-auto rounded-lg border border-border bg-surface">@foreach ($this->customerMatches as $customer)<button class="nl-focus flex min-h-11 w-full items-center justify-between gap-3 p-3 text-left hover:bg-primary-soft" type="button" wire:click="selectCustomer({{ $customer->id }})" x-on:click="customerOpen = false"><span><span class="block text-sm font-bold">{{ $customer->name }}</span><span class="block text-xs text-muted">{{ $customer->code }} @if($customer->phone) · {{ $customer->phone }} @endif</span></span><span class="text-xs font-bold text-amber-600">{{ $customer->points }} poin</span></button>@endforeach</div>
                     @elseif (mb_strlen($customerSearch) >= 2)
                         <p class="mt-2 text-xs text-muted">Member tidak ditemukan.</p>
                     @endif
                 @endif
+                        </div>
+                    </aside>
                 </div>
             </div>
 
@@ -93,28 +98,33 @@
             <div class="mt-4 space-y-3 border-t border-border pt-4 text-sm dark:border-white/10">
                 <div class="flex justify-between"><span>Subtotal</span><span>Rp {{ number_format($this->subtotal, 0, ',', '.') }}</span></div>
                 <div class="flex justify-between"><span>Diskon item</span><span>− Rp {{ number_format($this->itemDiscountTotal, 0, ',', '.') }}</span></div>
-                <div x-data="{ adjustmentsOpen: false }">
-                    <button class="nl-focus flex min-h-11 w-full items-center justify-between rounded-md px-2 text-left text-xs font-bold text-primary hover:bg-primary-soft" type="button" x-on:click="adjustmentsOpen = ! adjustmentsOpen"><span>Diskon & promosi</span><span x-text="adjustmentsOpen ? 'Tutup' : 'Tambah'"></span></button>
-                    <div class="mt-2 space-y-3" x-show="adjustmentsOpen" x-cloak x-transition.opacity.duration.150ms>
-                        <div>
-                            <label class="mb-1 block text-xs text-muted" for="transaction-discount">Diskon transaksi</label>
-                            <x-filament::input.wrapper prefix="Rp">
-                                <x-filament::input x-ref="transactionDiscount" id="transaction-discount" min="0" type="number" wire:model.live="manualTransactionDiscount" />
-                            </x-filament::input.wrapper>
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs text-muted" for="promotion-code">Kode promosi</label>
-                            <div class="flex gap-2">
-                                <x-filament::input.wrapper class="flex-1"><x-filament::input id="promotion-code" wire:model="promotionCode" /></x-filament::input.wrapper>
-                                <x-filament::button color="gray" type="button" wire:click="applyPromotion">Pakai</x-filament::button>
-                            </div>
-                            @if ($redeemCodeId)
-                                <div class="mt-2 flex items-center justify-between text-success-600">
-                                    <span>Promo {{ strtoupper($promotionCode) }}: − Rp {{ number_format($this->promotionDiscount, 0, ',', '.') }}</span>
-                                    <button class="nl-focus min-h-11 rounded-md px-2 text-xs underline" type="button" wire:click="removePromotion">Hapus</button>
+                <div>
+                    <button x-ref="adjustmentsTrigger" class="nl-focus flex min-h-11 w-full items-center justify-between rounded-md px-2 text-left text-xs font-bold text-primary hover:bg-primary-soft" type="button" x-on:click="rememberTrigger($event.currentTarget); adjustmentsOpen = true; $nextTick(() => $refs.transactionDiscount?.focus())"><span>Diskon & promosi</span><span>Tambah</span></button>
+                    <div x-show="adjustmentsOpen" x-cloak x-transition.opacity.duration.150ms class="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/30 p-4" x-on:click="closePanel('adjustmentsOpen')" role="presentation">
+                        <section class="w-full max-w-md rounded-lg border border-border bg-surface p-5 shadow-2xl dark:border-white/10 dark:bg-gray-900" x-on:click.stop role="dialog" aria-modal="true" aria-labelledby="adjustments-title">
+                            <div class="flex items-start justify-between gap-4"><div><p class="text-xs font-bold uppercase tracking-wide text-primary">PENYESUAIAN</p><h2 id="adjustments-title" class="mt-1 text-xl font-black">Diskon & promosi</h2></div><button class="nl-focus min-h-11 min-w-11 rounded-lg p-2 text-muted hover:bg-gray-100 dark:hover:bg-white/10" type="button" x-on:click="closePanel('adjustmentsOpen')" aria-label="Tutup diskon dan promosi"><x-filament::icon icon="heroicon-o-x-mark" class="size-5" /></button></div>
+                            <div class="mt-5 space-y-3">
+                                <div>
+                                    <label class="mb-1 block text-xs text-muted" for="transaction-discount">Diskon transaksi</label>
+                                    <x-filament::input.wrapper prefix="Rp">
+                                        <x-filament::input x-ref="transactionDiscount" id="transaction-discount" min="0" type="number" wire:model.live="manualTransactionDiscount" />
+                                    </x-filament::input.wrapper>
                                 </div>
-                            @endif
-                        </div>
+                                <div>
+                                    <label class="mb-1 block text-xs text-muted" for="promotion-code">Kode promosi</label>
+                                    <div class="flex gap-2">
+                                        <x-filament::input.wrapper class="flex-1"><x-filament::input id="promotion-code" wire:model="promotionCode" /></x-filament::input.wrapper>
+                                        <x-filament::button color="gray" type="button" wire:click="applyPromotion">Pakai</x-filament::button>
+                                    </div>
+                                    @if ($redeemCodeId)
+                                        <div class="mt-2 flex items-center justify-between text-success-600">
+                                            <span>Promo {{ strtoupper($promotionCode) }}: − Rp {{ number_format($this->promotionDiscount, 0, ',', '.') }}</span>
+                                            <button class="nl-focus min-h-11 rounded-md px-2 text-xs underline" type="button" wire:click="removePromotion">Hapus</button>
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                        </section>
                     </div>
                 </div>
             </div>
@@ -134,15 +144,14 @@
             <div wire:loading.flex wire:target="createPendingSale,addProduct,scanProduct" class="mt-3 items-center justify-center gap-2 text-xs font-semibold text-primary"><span class="size-2 animate-pulse rounded-full bg-primary"></span>Memproses transaksi…</div>
         </x-filament::section>
         </div>
-    </div>
 
     @if ($productOptionsOpen && $this->productForOptions)
-        <div x-data="{ open: true }" x-on:keydown.escape.window="open = false; $wire.cancelProductOptions()" x-show="open" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/50 p-4 backdrop-blur-sm" wire:key="product-options-dialog-{{ $productForOptionsId }}">
-            <div class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-900">
-                <form wire:submit="confirmProductOptions" x-on:submit="open = false">
+        <div x-show="modifierOpen" x-cloak x-on:click="modifierOpen = false; $wire.cancelProductOptions()" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/30 p-4" wire:key="product-options-dialog-{{ $productForOptionsId }}" role="presentation">
+            <div x-ref="modifierDialog" tabindex="-1" x-init="$nextTick(() => $el.focus())" class="w-full max-w-lg rounded-lg border border-border bg-surface p-5 shadow-2xl outline-none dark:border-white/10 dark:bg-gray-900" x-on:click.stop role="dialog" aria-modal="true" aria-labelledby="product-options-title">
+                <form wire:submit="confirmProductOptions">
                 <div class="flex items-start justify-between gap-4">
-                    <div><p class="text-sm font-medium text-primary">SESUAIKAN PESANAN</p><h2 class="mt-1 text-xl font-bold">{{ $this->productForOptions->name }}</h2></div>
-                    <button class="rounded-lg p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10" type="button" wire:click="cancelProductOptions" x-on:click="open = false"><x-filament::icon icon="heroicon-o-x-mark" class="size-5" /></button>
+                    <div><p class="text-sm font-medium text-primary">SESUAIKAN PESANAN</p><h2 id="product-options-title" class="mt-1 text-xl font-bold">{{ $this->productForOptions->name }}</h2></div>
+                    <button class="nl-focus min-h-11 min-w-11 rounded-lg p-2 text-muted hover:bg-gray-100 dark:hover:bg-white/10" type="button" wire:click="cancelProductOptions" x-on:click="modifierOpen = false" aria-label="Tutup pilihan produk"><x-filament::icon icon="heroicon-o-x-mark" class="size-5" /></button>
                 </div>
 
                 <div class="mt-6 space-y-5">
@@ -160,20 +169,22 @@
                     @endforeach
                 </div>
 
-                <div class="mt-6 flex gap-3"><button class="nl-focus min-h-11 flex-1 rounded-lg border border-border px-4 py-2 font-medium" type="button" wire:click="cancelProductOptions" x-on:click="open = false">Batal</button><button class="nl-focus min-h-11 flex-1 rounded-lg bg-primary px-4 py-2 font-medium text-white hover:bg-primary-hover" type="submit" wire:loading.attr="disabled" wire:target="confirmProductOptions"><span wire:loading.remove wire:target="confirmProductOptions">{{ $editingCartIndex !== null ? 'Simpan perubahan' : 'Tambahkan ke keranjang' }}</span><span wire:loading wire:target="confirmProductOptions">Menyimpan…</span></button></div>
+                <div class="mt-6 flex gap-3"><button class="nl-focus min-h-11 flex-1 rounded-lg border border-border px-4 py-2 font-medium" type="button" wire:click="cancelProductOptions" x-on:click="modifierOpen = false">Batal</button><button class="nl-focus min-h-11 flex-1 rounded-lg bg-primary px-4 py-2 font-medium text-white hover:bg-primary-hover" type="submit" wire:loading.attr="disabled" wire:target="confirmProductOptions"><span wire:loading.remove wire:target="confirmProductOptions">{{ $editingCartIndex !== null ? 'Simpan perubahan' : 'Tambahkan ke keranjang' }}</span><span wire:loading wire:target="confirmProductOptions">Menyimpan…</span></button></div>
                 </form>
             </div>
         </div>
     @endif
 
     @if ($newMemberModalOpen)
-        <div x-data="{ open: true }" x-on:keydown.escape.window="open = false; $wire.cancelNewMember()" x-show="open" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/50 p-4 backdrop-blur-sm" wire:key="new-member-dialog">
-            <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-900">
-                <form wire:submit="createMember" x-on:submit="open = false">
-                    <div class="flex items-start justify-between gap-4"><div><p class="text-sm font-bold text-primary">MEMBER BARU</p><h2 class="mt-1 text-xl font-black">Daftarkan pelanggan</h2><p class="mt-1 text-sm text-muted">Kode member dibuat otomatis dan langsung dipilih.</p></div><button class="nl-focus min-h-11 min-w-11 rounded-lg p-2 text-muted hover:bg-gray-100 dark:hover:bg-white/10" type="button" wire:click="cancelNewMember" x-on:click="open = false"><x-filament::icon icon="heroicon-o-x-mark" class="size-5" /></button></div>
-                    <div class="mt-6 space-y-4"><div><label class="mb-1 block text-sm font-semibold">Nama pelanggan</label><x-filament::input.wrapper><x-filament::input wire:model="newMemberName" autofocus placeholder="Contoh: Andi Pratama" /></x-filament::input.wrapper>@error('newMemberName')<p class="mt-1 text-xs text-danger-600">{{ $message }}</p>@enderror</div><div><label class="mb-1 block text-sm font-semibold">Nomor WhatsApp</label><x-filament::input.wrapper><x-filament::input wire:model="newMemberPhone" placeholder="0812…" type="tel" /></x-filament::input.wrapper>@error('newMemberPhone')<p class="mt-1 text-xs text-danger-600">{{ $message }}</p>@enderror</div><div><label class="mb-1 block text-sm font-semibold">Email <span class="font-normal text-gray-500">(opsional)</span></label><x-filament::input.wrapper><x-filament::input wire:model="newMemberEmail" placeholder="nama@email.com" type="email" /></x-filament::input.wrapper>@error('newMemberEmail')<p class="mt-1 text-xs text-danger-600">{{ $message }}</p>@enderror</div></div>
-                    <div class="mt-6 flex gap-3"><button class="nl-focus min-h-11 flex-1 rounded-lg border border-border px-4 py-2 font-semibold" type="button" wire:click="cancelNewMember" x-on:click="open = false">Batal</button><button class="nl-focus min-h-11 flex-1 rounded-lg bg-primary px-4 py-2 font-bold text-white hover:bg-primary-hover" type="submit" wire:loading.attr="disabled" wire:target="createMember"><span wire:loading.remove wire:target="createMember">Buat & pilih member</span><span wire:loading wire:target="createMember">Menyimpan…</span></button></div>
+        <div x-show="memberOpen" x-cloak x-on:click="memberOpen = false; $wire.cancelNewMember()" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/30 p-4" wire:key="new-member-dialog" role="presentation">
+            <div x-ref="memberDialog" tabindex="-1" x-init="$nextTick(() => $refs.memberName?.focus())" class="w-full max-w-md rounded-lg border border-border bg-surface p-5 shadow-2xl outline-none dark:border-white/10 dark:bg-gray-900" x-on:click.stop role="dialog" aria-modal="true" aria-labelledby="new-member-title">
+                <form wire:submit="createMember">
+                    <div class="flex items-start justify-between gap-4"><div><p class="text-sm font-bold text-primary">MEMBER BARU</p><h2 id="new-member-title" class="mt-1 text-xl font-black">Daftarkan pelanggan</h2><p class="mt-1 text-sm text-muted">Kode member dibuat otomatis dan langsung dipilih.</p></div><button class="nl-focus min-h-11 min-w-11 rounded-lg p-2 text-muted hover:bg-gray-100 dark:hover:bg-white/10" type="button" wire:click="cancelNewMember" x-on:click="memberOpen = false" aria-label="Tutup pendaftaran member"><x-filament::icon icon="heroicon-o-x-mark" class="size-5" /></button></div>
+                    <div class="mt-6 space-y-4"><div><label class="mb-1 block text-sm font-semibold">Nama pelanggan</label><x-filament::input.wrapper><x-filament::input x-ref="memberName" wire:model="newMemberName" placeholder="Contoh: Andi Pratama" /></x-filament::input.wrapper>@error('newMemberName')<p class="mt-1 text-xs text-danger-600">{{ $message }}</p>@enderror</div><div><label class="mb-1 block text-sm font-semibold">Nomor WhatsApp</label><x-filament::input.wrapper><x-filament::input wire:model="newMemberPhone" placeholder="0812…" type="tel" /></x-filament::input.wrapper>@error('newMemberPhone')<p class="mt-1 text-xs text-danger-600">{{ $message }}</p>@enderror</div><div><label class="mb-1 block text-sm font-semibold">Email <span class="font-normal text-gray-500">(opsional)</span></label><x-filament::input.wrapper><x-filament::input wire:model="newMemberEmail" placeholder="nama@email.com" type="email" /></x-filament::input.wrapper>@error('newMemberEmail')<p class="mt-1 text-xs text-danger-600">{{ $message }}</p>@enderror</div></div>
+                    <div class="mt-6 flex gap-3"><button class="nl-focus min-h-11 flex-1 rounded-lg border border-border px-4 py-2 font-semibold" type="button" wire:click="cancelNewMember" x-on:click="memberOpen = false">Batal</button><button class="nl-focus min-h-11 flex-1 rounded-lg bg-primary px-4 py-2 font-bold text-white hover:bg-primary-hover" type="submit" wire:loading.attr="disabled" wire:target="createMember"><span wire:loading.remove wire:target="createMember">Buat & pilih member</span><span wire:loading wire:target="createMember">Menyimpan…</span></button></div>
                 </form>
             </div>
         </div>
     @endif
+
+</div>
