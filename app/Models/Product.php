@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\ProductType;
 use App\Models\Concerns\BelongsToCurrentStore;
+use App\Models\Concerns\HasPublicId;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -12,7 +13,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Product extends Model
 {
-    use BelongsToCurrentStore, SoftDeletes;
+    use BelongsToCurrentStore, HasPublicId, SoftDeletes;
 
     protected $fillable = [
         'store_id',
