@@ -97,7 +97,7 @@ class PosCheckoutTest extends TestCase
         app(AddPaymentAction::class)->handle($sale, $cashier, PaymentMethod::Cash, 10000, 12000);
 
         $this->actingAs($cashier)
-            ->get(route('cashier.receipt.print', $sale))
+            ->get(route('cashier.receipt.print', ['sale' => $sale->invoice_number]))
             ->assertOk()
             ->assertSee('STRUK PEMBAYARAN')
             ->assertSee($sale->invoice_number)
@@ -122,7 +122,7 @@ class PosCheckoutTest extends TestCase
         $sale->store()->update(['logo_path' => 'store-logos/test.png']);
 
         $this->actingAs($cashier)
-            ->get(route('cashier.receipt.print', $sale))
+            ->get(route('cashier.receipt.print', ['sale' => $sale->invoice_number]))
             ->assertOk()
             ->assertSee('alt="Logo Toko POS uji"', false)
             ->assertSee('/storage/store-logos/test.png', false);
@@ -140,10 +140,73 @@ class PosCheckoutTest extends TestCase
         $sale->store()->update(['logo_path' => 'store-logos/missing.png']);
 
         $this->actingAs($cashier)
-            ->get(route('cashier.receipt.print', $sale))
+            ->get(route('cashier.receipt.print', ['sale' => $sale->invoice_number]))
             ->assertOk()
             ->assertSee('Toko POS uji')
             ->assertDontSee('alt="Logo Toko POS uji"', false);
+    }
+
+    public function test_numeric_sale_id_is_not_a_receipt_identifier(): void
+    {
+        [$cashier, $product] = $this->prepareCheckoutContext();
+        $sale = app(CreatePendingSaleAction::class)->handle(
+            $cashier->cashierShifts()->where('status', 'open')->firstOrFail(),
+            $cashier,
+            [['product_id' => $product->id, 'quantity' => 1]],
+        );
+        app(AddPaymentAction::class)->handle($sale, $cashier, PaymentMethod::Cash, 10000, 10000);
+
+        $this->actingAs($cashier)
+            ->get('/cashier/receipts/'.$sale->id.'/print')
+            ->assertNotFound();
+    }
+
+    public function test_unknown_receipt_invoice_is_not_found(): void
+    {
+        [$cashier] = $this->prepareCheckoutContext();
+
+        $this->actingAs($cashier)
+            ->get('/cashier/receipts/POS-UNKNOWN-INVOICE/print')
+            ->assertNotFound();
+    }
+
+    public function test_non_cashier_cannot_access_cashier_receipt(): void
+    {
+        [$cashier, $product] = $this->prepareCheckoutContext();
+        $sale = app(CreatePendingSaleAction::class)->handle(
+            $cashier->cashierShifts()->where('status', 'open')->firstOrFail(),
+            $cashier,
+            [['product_id' => $product->id, 'quantity' => 1]],
+        );
+        app(AddPaymentAction::class)->handle($sale, $cashier, PaymentMethod::Cash, 10000, 10000);
+        $owner = User::factory()->create([
+            'store_id' => $cashier->store_id,
+            'role' => UserRole::Owner,
+        ]);
+
+        $this->actingAs($owner)
+            ->get(route('cashier.receipt.print', ['sale' => $sale->invoice_number]))
+            ->assertForbidden();
+    }
+
+    public function test_cashier_cannot_access_receipt_from_another_store(): void
+    {
+        [$cashier, $product] = $this->prepareCheckoutContext();
+        $sale = app(CreatePendingSaleAction::class)->handle(
+            $cashier->cashierShifts()->where('status', 'open')->firstOrFail(),
+            $cashier,
+            [['product_id' => $product->id, 'quantity' => 1]],
+        );
+        app(AddPaymentAction::class)->handle($sale, $cashier, PaymentMethod::Cash, 10000, 10000);
+        $otherStore = Store::query()->create(['name' => 'Toko Lain', 'slug' => 'toko-lain']);
+        $otherCashier = User::factory()->create([
+            'store_id' => $otherStore->id,
+            'role' => UserRole::Cashier,
+        ]);
+
+        $this->actingAs($otherCashier)
+            ->get(route('cashier.receipt.print', ['sale' => $sale->invoice_number]))
+            ->assertNotFound();
     }
 
     public function test_cashier_payment_modal_uses_the_pending_sale_and_supports_split_payment(): void
