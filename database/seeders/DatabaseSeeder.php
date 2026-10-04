@@ -48,19 +48,71 @@ class DatabaseSeeder extends Seeder
             $cashier = $this->user('Sinta Kasir', 'cashier@naslabs.my.id', UserRole::Cashier, $store->id);
             $this->user('Administrator NasLabs', 'admin@naslabs.my.id', UserRole::Admin, null);
 
-            $food = Category::withoutGlobalScopes()->updateOrCreate(['name' => 'Makanan'], ['store_id' => $store->id, 'is_active' => true]);
-            $drink = Category::withoutGlobalScopes()->updateOrCreate(['name' => 'Minuman'], ['store_id' => $store->id, 'is_active' => true]);
+            $categories = [];
+            foreach (['Makanan', 'Minuman', 'Kopi', 'Snack', 'Dessert'] as $categoryName) {
+                $categories[$categoryName] = Category::withoutGlobalScopes()->updateOrCreate(
+                    ['store_id' => $store->id, 'name' => $categoryName],
+                    ['is_active' => true],
+                );
+            }
             $unit = Unit::withoutGlobalScopes()->updateOrCreate(['name' => 'Pcs'], ['store_id' => $store->id, 'symbol' => 'pcs', 'is_active' => true]);
-            $items = [
-                [$food, 'Nasi Goreng Spesial', 'NLM-FOOD-001', '8991000000011', 18000, 25000, 45],
-                [$food, 'Roti Cokelat', 'NLM-FOOD-002', '8991000000028', 6500, 10000, 32],
-                [$drink, 'Es Teh Manis', 'NLM-DRINK-001', '8991000000035', 3000, 7000, 80],
-                [$drink, 'Kopi Susu Gula Aren', 'NLM-DRINK-002', '8991000000042', 12000, 20000, 26],
+
+            $sugar = [
+                ['Normal sugar', 0, true], ['Less sugar', 0, false], ['No sugar', 0, false],
+            ];
+            $ice = [
+                ['Ice normal', 0, true], ['Less ice', 0, false], ['No ice', 0, false],
+            ];
+            $serving = [
+                ['Hot', 0, true], ['Ice', 0, false],
+            ];
+            $sauces = [
+                ['Spicy sauce', 0, true], ['Cheese sauce', 3000, false],
+            ];
+            $catalog = [
+                ['Makanan', 'Nasi Goreng Spesial', 'FOD-001', 25000, 45, []],
+                ['Makanan', 'Nasi Goreng Ayam', 'FOD-002', 23000, 35, []],
+                ['Makanan', 'Nasi Ayam Geprek', 'FOD-003', 24000, 30, []],
+                ['Makanan', 'Nasi Ayam Teriyaki', 'FOD-004', 27000, 24, []],
+                ['Makanan', 'Mie Goreng', 'FOD-005', 18000, 38, []],
+                ['Makanan', 'Mie Kuah', 'FOD-006', 18000, 28, []],
+                ['Makanan', 'Rice Bowl Chicken', 'FOD-007', 28000, 22, []],
+                ['Makanan', 'Sandwich Ayam', 'FOD-008', 22000, 20, []],
+                ['Minuman', 'Es Teh Manis', 'DRK-001', 7000, 80, [['Level gula', true, $sugar], ['Es', true, $ice]]],
+                ['Minuman', 'Lemon Tea', 'DRK-002', 12000, 55, [['Level gula', true, $sugar], ['Es', true, $ice]]],
+                ['Minuman', 'Thai Tea', 'DRK-003', 15000, 42, [['Level gula', true, $sugar], ['Es', true, $ice]]],
+                ['Minuman', 'Matcha Latte', 'DRK-004', 20000, 30, [['Level gula', true, $sugar], ['Es', true, $ice]]],
+                ['Minuman', 'Chocolate Milk', 'DRK-005', 18000, 33, [['Level gula', true, $sugar], ['Es', true, $ice]]],
+                ['Minuman', 'Air Mineral', 'DRK-006', 5000, 100, []],
+                ['Minuman', 'Soda Lemon', 'DRK-007', 12000, 40, []],
+                ['Minuman', 'Jus Jeruk', 'DRK-008', 15000, 32, []],
+                ['Kopi', 'Americano', 'COF-001', 18000, 40, [['Penyajian', true, $serving], ['Level gula', true, $sugar]]],
+                ['Kopi', 'Cafe Latte', 'COF-002', 22000, 34, [['Penyajian', true, $serving], ['Level gula', true, $sugar]]],
+                ['Kopi', 'Cappuccino', 'COF-003', 22000, 28, [['Penyajian', true, $serving], ['Level gula', true, $sugar]]],
+                ['Kopi', 'Kopi Susu Gula Aren', 'COF-004', 20000, 26, [['Level gula', true, $sugar], ['Es', true, $ice]]],
+                ['Kopi', 'Caramel Latte', 'COF-005', 25000, 24, [['Penyajian', true, $serving], ['Level gula', true, $sugar]]],
+                ['Kopi', 'Vanilla Latte', 'COF-006', 24000, 25, [['Penyajian', true, $serving], ['Level gula', true, $sugar]]],
+                ['Snack', 'Roti Cokelat', 'SNK-001', 10000, 32, []],
+                ['Snack', 'Roti Keju', 'SNK-002', 11000, 29, []],
+                ['Snack', 'French Fries', 'SNK-003', 15000, 40, [['Saus', false, $sauces]]],
+                ['Snack', 'Onion Rings', 'SNK-004', 16000, 25, []],
+                ['Snack', 'Chicken Nugget', 'SNK-005', 18000, 30, [['Saus', false, $sauces]]],
+                ['Snack', 'Pisang Cokelat', 'SNK-006', 14000, 35, []],
+                ['Snack', 'Cireng', 'SNK-007', 12000, 32, []],
+                ['Snack', 'Tahu Crispy', 'SNK-008', 13000, 30, []],
+                ['Dessert', 'Brownies', 'DST-001', 15000, 22, []],
+                ['Dessert', 'Cheesecake Slice', 'DST-002', 22000, 16, []],
+                ['Dessert', 'Pudding Cokelat', 'DST-003', 12000, 24, []],
+                ['Dessert', 'Ice Cream Vanilla', 'DST-004', 13000, 28, []],
+                ['Dessert', 'Ice Cream Chocolate', 'DST-005', 13000, 27, []],
+                ['Dessert', 'Croffle', 'DST-006', 18000, 20, [['Saus', false, [['Chocolate sauce', 3000, false], ['Caramel sauce', 3000, false]]]]],
             ];
             $products = [];
-            foreach ($items as [$category, $name, $sku, $barcode, $cost, $price, $stock]) {
-                $product = Product::withoutGlobalScopes()->updateOrCreate(['sku' => $sku], [
-                    'store_id' => $store->id, 'category_id' => $category->id, 'unit_id' => $unit->id, 'name' => $name, 'barcode' => $barcode,
+            foreach ($catalog as $index => [$categoryName, $name, $sku, $price, $stock, $modifierGroups]) {
+                $cost = (int) round($price * 0.6);
+                $barcode = '899100'.str_pad((string) ($index + 1), 6, '0', STR_PAD_LEFT);
+                $product = Product::withoutGlobalScopes()->updateOrCreate(['store_id' => $store->id, 'name' => $name], [
+                    'category_id' => $categories[$categoryName]->id, 'unit_id' => $unit->id, 'sku' => $sku, 'barcode' => $barcode,
                     'product_type' => 'stockable', 'cost_price' => $cost, 'selling_price' => $price, 'minimum_stock' => 10, 'is_active' => true,
                 ]);
                 $inventory = Inventory::query()->firstOrCreate(['product_id' => $product->id], ['quantity' => 0]);
@@ -78,28 +130,15 @@ class DatabaseSeeder extends Seeder
                         'occurred_at' => now(),
                     ]);
                 }
+
+                $groupNames = array_column($modifierGroups, 0);
+                $groupsQuery = ProductOptionGroup::query()->where('product_id', $product->id);
+                $groupNames === [] ? $groupsQuery->delete() : $groupsQuery->whereNotIn('name', $groupNames)->delete();
+                foreach ($modifierGroups as [$groupName, $required, $values]) {
+                    $this->optionGroup($product, $groupName, $required, $values);
+                }
                 $products[] = $product;
             }
-
-            $this->optionGroup($products[2], 'Level gula', true, [
-                ['Normal sugar', 0, true],
-                ['Less sugar', 0, false],
-                ['No sugar', 0, false],
-            ]);
-            $this->optionGroup($products[2], 'Es', true, [
-                ['Ice normal', 0, true],
-                ['Less ice', 0, false],
-                ['No ice', 0, false],
-            ]);
-            $this->optionGroup($products[3], 'Level gula', true, [
-                ['Normal sugar', 0, true],
-                ['Less sugar', 0, false],
-                ['No sugar', 0, false],
-            ]);
-            $this->optionGroup($products[3], 'Add-on', false, [
-                ['Extra espresso', 5000, false],
-                ['Extra jelly', 3000, false],
-            ]);
 
             $supplier = Supplier::withoutGlobalScopes()->updateOrCreate(['store_id' => $store->id, 'name' => 'PT Pangan Sejahtera'], ['phone' => '0811-5555-6677', 'email' => 'sales@pangansejahtera.id', 'address' => 'Samarinda', 'is_active' => true]);
             Customer::withoutGlobalScopes()->updateOrCreate(['store_id' => $store->id, 'code' => 'MBR-001'], ['name' => 'Andi Pratama', 'phone' => '0813-9000-1122', 'points' => 125, 'credit_limit' => 500000, 'credit_balance' => 0, 'is_active' => true]);
