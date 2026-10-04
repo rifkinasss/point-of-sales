@@ -22,6 +22,12 @@ class PosCheckoutTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_guest_is_redirected_to_the_actual_login_route(): void
+    {
+        $this->get('/cashier/pos-checkout')
+            ->assertRedirect(route('auth.login'));
+    }
+
     public function test_canonical_cashier_pos_route_renders_the_livewire_workspace(): void
     {
         [$cashier] = $this->prepareCheckoutContext();
