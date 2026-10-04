@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Actions\Inventory\RecordInitialStockAction;
+use App\Actions\Sale\AddPaymentAction;
 use App\Actions\Sale\CreatePendingSaleAction;
 use App\Actions\Shift\OpenShiftAction;
 use App\Enums\PaymentMethod;
@@ -82,6 +83,27 @@ class PosCheckoutTest extends TestCase
             ->assertOk()
             ->assertSee('Selesaikan transaksi')
             ->assertSee('ALOKASI PEMBAYARAN');
+    }
+
+    public function test_dedicated_receipt_print_route_renders_receipt_only_for_paid_sale(): void
+    {
+        [$cashier, $product] = $this->prepareCheckoutContext();
+        $sale = app(CreatePendingSaleAction::class)->handle(
+            $cashier->cashierShifts()->where('status', 'open')->firstOrFail(),
+            $cashier,
+            [['product_id' => $product->id, 'quantity' => 1]],
+        );
+        app(AddPaymentAction::class)->handle($sale, $cashier, PaymentMethod::Cash, 10000, 12000);
+
+        $this->actingAs($cashier)
+            ->get(route('cashier.receipt.print', $sale))
+            ->assertOk()
+            ->assertSee('STRUK PEMBAYARAN')
+            ->assertSee($sale->invoice_number)
+            ->assertSee('Kopi uji')
+            ->assertSee('Tunai diterima')
+            ->assertSee('Kembalian')
+            ->assertDontSee('Kembali ke POS');
     }
 
     public function test_cashier_payment_modal_uses_the_pending_sale_and_supports_split_payment(): void
