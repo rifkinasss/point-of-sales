@@ -22,7 +22,7 @@ class PosCheckout extends PosCheckoutComponent
 
     public bool $paymentModalOpen = false;
 
-    public ?Sale $paymentSale = null;
+    public ?string $paymentInvoiceNumber = null;
 
     public string $paymentMethod = 'cash';
 
@@ -43,19 +43,19 @@ class PosCheckout extends PosCheckoutComponent
         parent::mount();
 
         if (request()->filled('sale')) {
-            $this->openPaymentForSale((int) request()->integer('sale'));
+            $this->openPaymentForSale(request()->string('sale')->toString());
         }
     }
 
     public function createPendingSale(): void
     {
         if ($this->paymentSale?->status === SaleStatus::PendingPayment) {
-            $this->openPaymentForSale($this->paymentSale->id);
+            $this->openPaymentForSale($this->paymentSale->invoice_number);
 
             return;
         }
 
-        $this->openPaymentForSale($this->createPendingSaleRecord()->id);
+        $this->openPaymentForSale($this->createPendingSaleRecord()->invoice_number);
     }
 
     public function selectPaymentMethod(string $method): void
@@ -110,11 +110,12 @@ class PosCheckout extends PosCheckoutComponent
             return;
         }
 
-        $this->paymentSale = $sale->load(['items', 'customer', 'payments']);
-        $this->paymentChange = $this->paymentSale->payments->last()?->change_amount;
+        $this->paymentInvoiceNumber = $sale->invoice_number;
+        unset($this->paymentSale);
+        $this->paymentChange = $sale->payments->last()?->change_amount;
         $this->paymentReference = '';
 
-        if ($this->paymentSale->status === SaleStatus::Paid) {
+        if ($sale->status === SaleStatus::Paid) {
             $this->paymentSuccess = true;
             $this->paymentAmount = 0;
             $this->cashReceived = 0;
@@ -137,7 +138,7 @@ class PosCheckout extends PosCheckoutComponent
         }
 
         try {
-            $this->paymentSale = app(CompleteSalePaymentAction::class)->handle($this->paymentSale, $this->cashierUser());
+            app(CompleteSalePaymentAction::class)->handle($this->paymentSale, $this->cashierUser());
         } catch (ValidationException $exception) {
             foreach ($exception->errors() as $field => $messages) {
                 foreach ($messages as $message) {
@@ -172,7 +173,7 @@ class PosCheckout extends PosCheckoutComponent
 
         $this->clearCart();
         $this->clearCustomer();
-        $this->paymentSale = null;
+        $this->paymentInvoiceNumber = null;
         $this->paymentModalOpen = false;
         $this->paymentSuccess = false;
         $this->paymentChange = null;
@@ -219,11 +220,11 @@ class PosCheckout extends PosCheckoutComponent
         ];
     }
 
-    private function openPaymentForSale(int $saleId): void
+    private function openPaymentForSale(string $invoiceNumber): void
     {
         $sale = Sale::query()
             ->with(['items', 'customer', 'payments'])
-            ->whereKey($saleId)
+            ->where('invoice_number', $invoiceNumber)
             ->where('cashier_id', $this->cashierUser()->id)
             ->where('store_id', $this->cashierUser()->store_id)
             ->where('status', SaleStatus::PendingPayment)
@@ -235,7 +236,8 @@ class PosCheckout extends PosCheckoutComponent
             return;
         }
 
-        $this->paymentSale = $sale;
+        $this->paymentInvoiceNumber = $sale->invoice_number;
+        unset($this->paymentSale);
         $this->paymentModalOpen = true;
         $this->paymentSuccess = false;
         $this->paymentMethod = PaymentMethod::Cash->value;
@@ -244,6 +246,21 @@ class PosCheckout extends PosCheckoutComponent
         $this->paymentReference = '';
         $this->paymentChange = null;
         $this->paymentNotice = null;
+    }
+
+    public function getPaymentSaleProperty(): ?Sale
+    {
+        if (! $this->paymentInvoiceNumber) {
+            return null;
+        }
+
+        return Sale::query()
+            ->with(['items', 'customer', 'payments'])
+            ->where('invoice_number', $this->paymentInvoiceNumber)
+            ->where('cashier_id', $this->cashierUser()->id)
+            ->where('store_id', $this->cashierUser()->store_id)
+            ->whereIn('status', [SaleStatus::PendingPayment, SaleStatus::Paid])
+            ->first();
     }
 
     private function cashierUser(): User
@@ -258,6 +275,7 @@ class PosCheckout extends PosCheckoutComponent
     {
         return view('livewire.cashier.pos-checkout', [
             'title' => 'POS Kasir',
+            'paymentSale' => $this->paymentSale,
         ]);
     }
 }

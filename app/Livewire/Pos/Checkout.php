@@ -24,9 +24,9 @@ class Checkout extends Component
 {
     public string $search = '';
 
-    public ?int $selectedCategoryId = null;
+    public ?string $selectedCategoryPublicId = null;
 
-    public ?int $customerId = null;
+    public ?string $customerPublicId = null;
 
     /** Pencarian member di checkout, agar tidak perlu memuat seluruh pelanggan dalam select. */
     public string $customerSearch = '';
@@ -45,7 +45,7 @@ class Checkout extends Component
     /** @var array<int, array<string, mixed>> */
     public array $cart = [];
 
-    public ?int $productForOptionsId = null;
+    public ?string $productForOptionsPublicId = null;
 
     /** Kept independently from the computed product so the dialog closes reliably after Livewire updates. */
     public bool $productOptionsOpen = false;
@@ -53,14 +53,12 @@ class Checkout extends Component
     /** Index item keranjang yang sedang diubah; null berarti item baru. */
     public ?int $editingCartIndex = null;
 
-    /** @var array<int, int|array<int, bool>|null> */
-    public array $selectedOptionValueIds = [];
+    /** @var array<string, string|array<string, bool>|null> */
+    public array $selectedOptionValuePublicIds = [];
 
     public int $manualTransactionDiscount = 0;
 
     public string $promotionCode = '';
-
-    public ?int $redeemCodeId = null;
 
     public int $promotionFlatDiscount = 0;
 
@@ -82,7 +80,11 @@ class Checkout extends Component
         return Product::query()
             ->with(['inventory', 'optionGroups.values'])
             ->where('is_active', true)
-            ->when($this->selectedCategoryId, fn ($query) => $query->where('category_id', $this->selectedCategoryId))
+            ->when($this->selectedCategoryPublicId, function ($query): void {
+                $categoryId = Category::query()->where('public_id', $this->selectedCategoryPublicId)->value('id');
+
+                $query->where('category_id', $categoryId ?: 0);
+            })
             ->when($search !== '', function ($query) use ($search): void {
                 $query->where(function ($query) use ($search): void {
                     $query
@@ -105,9 +107,9 @@ class Checkout extends Component
             ->get();
     }
 
-    public function selectCategory(?int $categoryId = null): void
+    public function selectCategory(?string $categoryPublicId = null): void
     {
-        $this->selectedCategoryId = $categoryId;
+        $this->selectedCategoryPublicId = $categoryPublicId;
     }
 
     public function scanProduct(): void
@@ -136,12 +138,12 @@ class Checkout extends Component
             return;
         }
 
-        $this->addProduct($product->id);
+        $this->addProduct((string) $product->public_id);
     }
 
-    public function addProduct(int $productId): void
+    public function addProduct(string $productPublicId): void
     {
-        $product = Product::query()->with(['inventory', 'optionGroups.values'])->where('is_active', true)->find($productId);
+        $product = Product::query()->with(['inventory', 'optionGroups.values'])->where('is_active', true)->where('public_id', $productPublicId)->first();
 
         if (! $product) {
             throw ValidationException::withMessages(['product' => 'Produk tidak tersedia.']);
@@ -150,13 +152,13 @@ class Checkout extends Component
         $groups = $product->optionGroups->filter(fn ($group): bool => $group->values->where('is_active', true)->isNotEmpty());
 
         if ($groups->isNotEmpty()) {
-            $this->productForOptionsId = $product->id;
+            $this->productForOptionsPublicId = $product->public_id;
             $this->productOptionsOpen = true;
-            $this->selectedOptionValueIds = [];
+            $this->selectedOptionValuePublicIds = [];
 
             foreach ($groups as $group) {
-                $defaults = $group->values->where('is_active', true)->where('is_default', true)->pluck('id')->all();
-                $this->selectedOptionValueIds[$group->id] = $group->maximum_selections === 1
+                $defaults = $group->values->where('is_active', true)->where('is_default', true)->pluck('public_id')->all();
+                $this->selectedOptionValuePublicIds[$group->public_id] = $group->maximum_selections === 1
                     ? ($defaults[0] ?? null)
                     : array_fill_keys($defaults, true);
             }
@@ -179,7 +181,7 @@ class Checkout extends Component
 
         $selectedValueIds = [];
         foreach ($product->optionGroups as $group) {
-            $ids = $this->selectedIdsForGroup($group->id);
+            $ids = $this->selectedIdsForGroup($group->public_id);
 
             if ($group->is_required && count($ids) < max(1, $group->minimum_selections)) {
                 Notification::make()->warning()->title("Pilih opsi {$group->name} terlebih dahulu.")->send();
@@ -198,24 +200,24 @@ class Checkout extends Component
 
         $values = ProductOptionValue::query()
             ->with('group')
-            ->whereIn('id', $selectedValueIds)
+            ->whereIn('public_id', $selectedValueIds)
             ->whereHas('group', fn ($query) => $query->where('product_id', $product->id))
             ->where('is_active', true)
             ->get();
 
         $modifiers = $values->map(fn (ProductOptionValue $value): array => ['group' => $value->group->name, 'name' => $value->name, 'price_adjustment' => $value->price_adjustment])->all();
-        $modifierValueIds = $values->pluck('id')->map(fn ($id): int => (int) $id)->all();
+        $modifierValuePublicIds = $values->pluck('public_id')->map(fn ($id): string => (string) $id)->all();
 
         if ($this->editingCartIndex !== null && isset($this->cart[$this->editingCartIndex])) {
             $this->cart[$this->editingCartIndex] = [
                 ...$this->cart[$this->editingCartIndex],
                 'modifier_total' => (int) $values->sum('price_adjustment'),
                 'modifiers' => $modifiers,
-                'modifier_value_ids' => $modifierValueIds,
-                'modifier_signature' => collect($modifierValueIds)->sort()->implode(','),
+                'modifier_value_public_ids' => $modifierValuePublicIds,
+                'modifier_signature' => collect($modifierValuePublicIds)->sort()->implode(','),
             ];
         } else {
-            $this->addProductToCart($product, $modifiers, $modifierValueIds);
+            $this->addProductToCart($product, $modifiers, $modifierValuePublicIds);
         }
 
         $this->cancelProductOptions();
@@ -224,8 +226,8 @@ class Checkout extends Component
     public function cancelProductOptions(): void
     {
         $this->productOptionsOpen = false;
-        $this->productForOptionsId = null;
-        $this->selectedOptionValueIds = [];
+        $this->productForOptionsPublicId = null;
+        $this->selectedOptionValuePublicIds = [];
         $this->editingCartIndex = null;
     }
 
@@ -237,42 +239,47 @@ class Checkout extends Component
             return;
         }
 
-        $product = Product::query()->with('optionGroups.values')->find($item['product_id']);
+        $product = Product::query()->with('optionGroups.values')->where('public_id', $item['product_public_id'])->first();
 
         if (! $product || $product->optionGroups->isEmpty()) {
             return;
         }
 
-        $selectedValueIds = collect($item['modifier_value_ids'] ?? [])->map(fn ($id): int => (int) $id)->all();
-        $this->productForOptionsId = $product->id;
+        $selectedValuePublicIds = $item['modifier_value_public_ids'] ?? [];
+        $this->productForOptionsPublicId = $product->public_id;
         $this->productOptionsOpen = true;
         $this->editingCartIndex = $index;
-        $this->selectedOptionValueIds = [];
+        $this->selectedOptionValuePublicIds = [];
 
         foreach ($product->optionGroups as $group) {
-            $ids = $group->values->pluck('id')->intersect($selectedValueIds)->map(fn ($id): int => (int) $id)->all();
-            $this->selectedOptionValueIds[$group->id] = $group->maximum_selections === 1 ? ($ids[0] ?? null) : array_fill_keys($ids, true);
+            $ids = $group->values->pluck('public_id')->intersect($selectedValuePublicIds)->map(fn ($id): string => (string) $id)->all();
+            $this->selectedOptionValuePublicIds[$group->public_id] = $group->maximum_selections === 1 ? ($ids[0] ?? null) : array_fill_keys($ids, true);
         }
 
         $this->dispatch('product-options-opened');
     }
 
-    public function selectSingleOption(int $groupId, int $valueId): void
+    public function selectSingleOption(string $groupPublicId, string $valuePublicId): void
     {
-        $this->selectedOptionValueIds[$groupId] = $valueId;
+        $this->selectedOptionValuePublicIds[$groupPublicId] = $valuePublicId;
     }
 
-    public function toggleOption(int $groupId, int $valueId): void
+    public function toggleOption(string $groupPublicId, string $valuePublicId): void
     {
-        $selected = $this->selectedOptionValueIds[$groupId] ?? [];
+        $selected = $this->selectedOptionValuePublicIds[$groupPublicId] ?? [];
         $selected = is_array($selected) ? $selected : [];
-        $selected[$valueId] = ! ($selected[$valueId] ?? false);
-        $this->selectedOptionValueIds[$groupId] = $selected;
+        $selected[$valuePublicId] = ! ($selected[$valuePublicId] ?? false);
+        $this->selectedOptionValuePublicIds[$groupPublicId] = $selected;
     }
 
-    public function isOptionSelected(int $groupId, int $valueId): bool
+    public function selectOption(string $groupPublicId, string $valuePublicId, bool $single): void
     {
-        return in_array($valueId, $this->selectedIdsForGroup($groupId), true);
+        $single ? $this->selectSingleOption($groupPublicId, $valuePublicId) : $this->toggleOption($groupPublicId, $valuePublicId);
+    }
+
+    public function isOptionSelected(string $groupPublicId, string $valuePublicId): bool
+    {
+        return in_array($valuePublicId, $this->selectedIdsForGroup($groupPublicId), true);
     }
 
     public function canConfirmProductOptions(): bool
@@ -284,7 +291,7 @@ class Checkout extends Component
         }
 
         return $product->optionGroups->every(function ($group): bool {
-            $selectedCount = count($this->selectedIdsForGroup($group->id));
+            $selectedCount = count($this->selectedIdsForGroup($group->public_id));
 
             return ! $group->is_required || $selectedCount >= max(1, (int) $group->minimum_selections);
         });
@@ -292,23 +299,23 @@ class Checkout extends Component
 
     public function getProductForOptionsProperty(): ?Product
     {
-        return $this->productForOptionsId
-            ? Product::query()->with('optionGroups.values')->find($this->productForOptionsId)
+        return $this->productForOptionsPublicId
+            ? Product::query()->with('optionGroups.values')->where('public_id', $this->productForOptionsPublicId)->first()
             : null;
     }
 
-    /** @param array<int, array<string, mixed>> $modifiers @param array<int, int> $modifierValueIds */
-    private function addProductToCart(Product $product, array $modifiers = [], array $modifierValueIds = []): void
+    /** @param array<int, array<string, mixed>> $modifiers @param array<int, string> $modifierValuePublicIds */
+    private function addProductToCart(Product $product, array $modifiers = [], array $modifierValuePublicIds = []): void
     {
         $modifierTotal = (int) collect($modifiers)->sum('price_adjustment');
-        $modifierSignature = implode(',', $modifierValueIds);
-        $index = collect($this->cart)->search(fn (array $item): bool => $item['product_id'] === $product->id && $item['modifier_signature'] === $modifierSignature);
+        $modifierSignature = implode(',', $modifierValuePublicIds);
+        $index = collect($this->cart)->search(fn (array $item): bool => $item['product_public_id'] === $product->public_id && $item['modifier_signature'] === $modifierSignature);
 
         if ($index !== false) {
             $this->cart[$index]['quantity']++;
         } else {
             $this->cart[] = [
-                'product_id' => $product->id,
+                'product_public_id' => $product->public_id,
                 'name' => $product->name,
                 'sku' => $product->sku,
                 'price' => $this->priceFor($product),
@@ -316,7 +323,7 @@ class Checkout extends Component
                 'discount' => 0,
                 'modifier_total' => $modifierTotal,
                 'modifiers' => $modifiers,
-                'modifier_value_ids' => $modifierValueIds,
+                'modifier_value_public_ids' => $modifierValuePublicIds,
                 'has_options' => $product->optionGroups
                     ->filter(fn (ProductOptionGroup $group): bool => $group->values->where('is_active', true)->isNotEmpty())
                     ->isNotEmpty(),
@@ -385,7 +392,7 @@ class Checkout extends Component
         $sale = $this->createPendingSaleRecord();
 
         $this->cart = [];
-        $this->redirect("/cashier/payment-page?sale={$sale->id}");
+        $this->redirect(route('cashier.payment', ['sale' => $sale->invoice_number]));
     }
 
     protected function createPendingSaleRecord(): \App\Models\Sale
@@ -399,20 +406,39 @@ class Checkout extends Component
         return app(CreatePendingSaleAction::class)->handle(
             $shift,
             $this->currentUser(),
-            collect($this->cart)
-                ->map(fn (array $item): array => [
-                    'product_id' => $item['product_id'],
-                    'quantity' => $item['quantity'],
-                    'discount_amount' => min($item['discount'], ($item['price'] + $item['modifier_total']) * $item['quantity']),
-                    'modifier_value_ids' => $item['modifier_value_ids'],
-                ])
-                ->all(),
+            $this->cartForApplication(),
             $this->manualTransactionDiscount,
             null,
-            $this->redeemCodeId,
-            $this->redeemCodeId ? strtoupper(trim($this->promotionCode)) : null,
-            $this->customerId,
+            $this->promotionCode !== '' ? RedeemCode::query()->where('code', strtoupper(trim($this->promotionCode)))->value('id') : null,
+            $this->promotionCode !== '' ? strtoupper(trim($this->promotionCode)) : null,
+            $this->customerPublicId ? Customer::query()->where('public_id', $this->customerPublicId)->value('id') : null,
         );
+    }
+
+    /** @return array<int, array{product_id: int, quantity: int, discount_amount: int, modifier_value_ids: array<int, int>}> */
+    private function cartForApplication(): array
+    {
+        return collect($this->cart)->map(function (array $item): array {
+            $product = Product::query()->where('public_id', $item['product_public_id'])->first();
+
+            if (! $product) {
+                throw ValidationException::withMessages(['product' => 'Produk tidak tersedia untuk toko ini.']);
+            }
+
+            $modifierValueIds = ProductOptionValue::query()
+                ->whereIn('public_id', $item['modifier_value_public_ids'] ?? [])
+                ->whereHas('group', fn ($query) => $query->where('product_id', $product->id))
+                ->pluck('id')
+                ->map(fn ($id): int => (int) $id)
+                ->all();
+
+            return [
+                'product_id' => $product->id,
+                'quantity' => $item['quantity'],
+                'discount_amount' => min($item['discount'], ($item['price'] + $item['modifier_total']) * $item['quantity']),
+                'modifier_value_ids' => $modifierValueIds,
+            ];
+        })->all();
     }
 
     public function getSubtotalProperty(): int
@@ -453,17 +479,12 @@ class Checkout extends Component
         }
 
         try {
-            $redeemCode = $this->redeemCodeId
-                ? RedeemCode::query()->with('campaign.rewards')->find($this->redeemCodeId)
+            $redeemCode = $this->promotionCode !== ''
+                ? RedeemCode::query()->with('campaign.rewards')->where('code', strtoupper(trim($this->promotionCode)))->first()
                 : null;
 
             return app(SaleCalculator::class)->calculate(
-                collect($this->cart)->map(fn (array $item): array => [
-                    'product_id' => $item['product_id'],
-                    'quantity' => $item['quantity'],
-                    'discount_amount' => (int) $item['discount'],
-                    'modifier_value_ids' => $item['modifier_value_ids'],
-                ])->all(),
+                $this->cartForApplication(),
                 max(0, (int) $this->manualTransactionDiscount),
                 $redeemCode,
                 $shift->store_id ?: $this->currentUser()->store_id,
@@ -476,8 +497,8 @@ class Checkout extends Component
 
     public function getSelectedCustomerProperty(): ?Customer
     {
-        return $this->customerId
-            ? Customer::query()->where('is_active', true)->find($this->customerId)
+        return $this->customerPublicId
+            ? Customer::query()->where('is_active', true)->where('public_id', $this->customerPublicId)->first()
             : null;
     }
 
@@ -502,9 +523,9 @@ class Checkout extends Component
             ->get();
     }
 
-    public function selectCustomer(int $customerId): void
+    public function selectCustomer(string $customerPublicId): void
     {
-        $customer = Customer::query()->where('is_active', true)->find($customerId);
+        $customer = Customer::query()->where('is_active', true)->where('public_id', $customerPublicId)->first();
 
         if (! $customer) {
             Notification::make()->danger()->title('Pelanggan tidak ditemukan atau tidak aktif.')->send();
@@ -512,7 +533,7 @@ class Checkout extends Component
             return;
         }
 
-        $this->customerId = $customer->id;
+        $this->customerPublicId = $customer->public_id;
         $this->customerSearch = '';
         $this->customerCardCode = '';
         Notification::make()->success()->title('Member '.$customer->name.' dipilih.')->send();
@@ -536,12 +557,12 @@ class Checkout extends Component
             return;
         }
 
-        $this->selectCustomer($customer->id);
+        $this->selectCustomer((string) $customer->public_id);
     }
 
     public function clearCustomer(): void
     {
-        $this->customerId = null;
+        $this->customerPublicId = null;
         $this->customerSearch = '';
         $this->customerCardCode = '';
     }
@@ -581,7 +602,7 @@ class Checkout extends Component
             'is_active' => true,
         ]);
 
-        $this->customerId = $customer->id;
+        $this->customerPublicId = $customer->public_id;
         $this->customerSearch = '';
         $this->customerCardCode = '';
         $this->cancelNewMember();
@@ -600,7 +621,7 @@ class Checkout extends Component
             return;
         }
 
-        $this->redeemCodeId = $code->id;
+        $this->promotionCode = strtoupper(trim($code->code));
         $this->promotionFlatDiscount = (int) $code->campaign->rewards
             ->filter(fn ($reward): bool => in_array($reward->getRawOriginal('type'), ['discount_amount', 'diskon_nominal'], true))
             ->sum('amount');
@@ -625,21 +646,20 @@ class Checkout extends Component
 
     private function resetPromotion(): void
     {
-        $this->redeemCodeId = null;
         $this->promotionFlatDiscount = 0;
         $this->promotionPercentageDiscount = 0;
     }
 
-    /** @return array<int, int> */
-    private function selectedIdsForGroup(int $groupId): array
+    /** @return array<int, string> */
+    private function selectedIdsForGroup(string $groupPublicId): array
     {
-        $selection = $this->selectedOptionValueIds[$groupId] ?? [];
+        $selection = $this->selectedOptionValuePublicIds[$groupPublicId] ?? [];
 
         if (! is_array($selection)) {
-            return $selection ? [(int) $selection] : [];
+            return $selection ? [(string) $selection] : [];
         }
 
-        return collect($selection)->filter()->keys()->map(fn ($id): int => (int) $id)->all();
+        return collect($selection)->filter()->keys()->map(fn ($id): string => (string) $id)->all();
     }
 
     private function currentUser(): User

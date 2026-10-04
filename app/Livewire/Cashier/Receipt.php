@@ -11,7 +11,7 @@ use Livewire\Component;
 
 class Receipt extends Component
 {
-    public ?Sale $sale = null;
+    public ?string $saleInvoiceNumber = null;
 
     public string $receiptEmail = '';
 
@@ -19,15 +19,16 @@ class Receipt extends Component
 
     public function mount(): void
     {
-        $this->sale = Sale::query()->with(['items', 'payments', 'cashier', 'customer', 'store'])->whereKey((int) request()->integer('sale'))->where('cashier_id', $this->currentUser()->id)->where('store_id', $this->currentUser()->store_id)->where('status', SaleStatus::Paid)->first();
+        $sale = Sale::query()->where('invoice_number', request()->string('sale')->toString())->where('cashier_id', $this->currentUser()->id)->where('store_id', $this->currentUser()->store_id)->where('status', SaleStatus::Paid)->first();
 
-        if (! $this->sale) {
+        if (! $sale) {
             $this->redirect('/cashier/pos');
 
             return;
         }
 
-        $this->receiptEmail = $this->sale->customer?->email ?? '';
+        $this->saleInvoiceNumber = $sale->invoice_number;
+        $this->receiptEmail = $sale->customer?->email ?? '';
     }
 
     public function emailReceipt(): void
@@ -40,7 +41,14 @@ class Receipt extends Component
 
     public function render()
     {
-        return view('livewire.cashier.receipt')->layout('components.layouts.cashier', ['title' => 'Struk']);
+        return view('livewire.cashier.receipt', ['sale' => $this->sale])->layout('components.layouts.cashier', ['title' => 'Struk']);
+    }
+
+    public function getSaleProperty(): ?Sale
+    {
+        return $this->saleInvoiceNumber
+            ? Sale::query()->with(['items', 'payments', 'cashier', 'customer', 'store'])->where('invoice_number', $this->saleInvoiceNumber)->where('cashier_id', $this->currentUser()->id)->where('store_id', $this->currentUser()->store_id)->where('status', SaleStatus::Paid)->first()
+            : null;
     }
 
     private function currentUser(): User

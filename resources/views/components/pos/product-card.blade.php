@@ -6,7 +6,7 @@
     class="pos-product-card nl-focus group flex min-h-44 flex-col overflow-hidden rounded-lg border border-border bg-surface text-left transition duration-150 hover:border-primary hover:bg-primary-soft/30 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-white/5 dark:hover:border-primary"
     type="button"
     @disabled($outOfStock)
-    wire:click="addProduct({{ $product->id }})"
+    wire:click="addProduct('{{ $product->public_id }}')"
 >
     <div class="relative flex min-h-20 items-center justify-center bg-primary-soft p-3 dark:bg-primary/10">
         @if ($product->image_path)
