@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegistrationController;
+use App\Http\Controllers\BrowserTimezoneController;
 use App\Livewire\Cashier\CloseShift;
 use App\Livewire\Cashier\OpenShift;
 use App\Livewire\Cashier\Payment;
@@ -18,6 +19,7 @@ Route::get('/auth/login', [LoginController::class, 'create'])->name('auth.login'
 Route::post('/auth/login', [LoginController::class, 'store'])->name('auth.login.store');
 Route::post('/auth/logout', [LoginController::class, 'destroy'])->middleware('auth')->name('auth.logout');
 Route::get('/cashier/open-shift', OpenShift::class)->middleware('auth')->name('cashier.open-shift');
+Route::post('/cashier/browser-timezone', BrowserTimezoneController::class)->middleware('auth')->name('cashier.browser-timezone');
 Route::redirect('/cashier', '/cashier/pos')->middleware('auth')->name('cashier.workspace');
 Route::get('/cashier/pos', PosCheckout::class)->middleware('auth')->name('cashier.pos');
 Route::get('/cashier/pos-checkout', PosCheckout::class)->middleware('auth')->name('cashier.pos.legacy');

@@ -52,7 +52,7 @@
                         </div>
                         <div class="flex items-baseline justify-between gap-6">
                             <dt class="text-xs font-semibold text-muted">Tanggal</dt>
-                            <dd class="text-right text-sm font-bold text-foreground dark:text-white">{{ now()->format('d M Y') }} <span class="font-normal text-muted">· {{ now()->format('H:i') }} WITA</span></dd>
+                            <dd class="text-right text-sm font-bold text-foreground dark:text-white"><x-local-date-time :value="now()" format="d M Y" /> <span class="font-normal text-muted">· <x-local-date-time :value="now()" format="H:i T" /></span></dd>
                         </div>
                     </dl>
                 </section>
