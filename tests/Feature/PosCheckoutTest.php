@@ -14,9 +14,12 @@ use App\Livewire\Cashier\PosCheckout as CashierPosCheckout;
 use App\Livewire\Pos\Checkout;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\ProductOptionGroup;
+use App\Models\ProductOptionValue;
 use App\Models\Store;
 use App\Models\Unit;
 use App\Models\User;
+use App\Models\Inventory;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
@@ -304,6 +307,76 @@ class PosCheckoutTest extends TestCase
             ->assertSet('cart', []);
 
         $this->assertSame(0, $component->get('grandTotal'));
+    }
+
+    public function test_numeric_product_id_is_not_accepted_by_the_public_product_action(): void
+    {
+        [$cashier, $product] = $this->prepareCheckoutContext();
+
+        $this->checkout($cashier)
+            ->call('addProduct', (string) $product->id)
+            ->assertHasErrors('product')
+            ->assertSet('cart', []);
+    }
+
+    public function test_product_from_another_store_cannot_be_added(): void
+    {
+        [$cashier] = $this->prepareCheckoutContext();
+        $otherStore = Store::query()->create(['name' => 'Toko Lain', 'slug' => 'toko-lain']);
+        $otherUnit = Unit::query()->create(['store_id' => $otherStore->id, 'name' => 'Unit', 'symbol' => 'unit', 'is_active' => true]);
+        $otherCategory = Category::query()->create(['store_id' => $otherStore->id, 'name' => 'Lainnya', 'is_active' => true]);
+        $otherProduct = Product::withoutGlobalScopes()->create([
+            'store_id' => $otherStore->id, 'category_id' => $otherCategory->id, 'unit_id' => $otherUnit->id,
+            'name' => 'Produk Store Lain', 'sku' => 'SKU-STORE-LAIN', 'barcode' => '899000000099',
+            'product_type' => ProductType::Stockable, 'cost_price' => 1000, 'selling_price' => 5000,
+            'minimum_stock' => 1, 'is_active' => true,
+        ]);
+        Inventory::query()->create(['product_id' => $otherProduct->id, 'quantity' => 10]);
+
+        $this->checkout($cashier)
+            ->call('addProduct', $otherProduct->public_id)
+            ->assertHasErrors('product')
+            ->assertSet('cart', []);
+    }
+
+    public function test_out_of_stock_product_cannot_be_added_or_increased(): void
+    {
+        [$cashier, $product] = $this->prepareCheckoutContext();
+        $product->inventory()->update(['quantity' => 0]);
+
+        $component = $this->checkout($cashier)
+            ->call('addProduct', $product->public_id)
+            ->assertHasErrors('product')
+            ->assertSet('cart', []);
+
+        $product->inventory()->update(['quantity' => 1]);
+        $component->call('addProduct', $product->public_id)->assertSet('cart.0.quantity', 1);
+        $product->inventory()->update(['quantity' => 0]);
+
+        $component->call('increaseQuantity', 0)
+            ->assertHasErrors('cart')
+            ->assertSet('cart.0.quantity', 1);
+    }
+
+    public function test_product_with_required_modifier_can_be_configured_and_added(): void
+    {
+        [$cashier, $product] = $this->prepareCheckoutContext();
+        $group = ProductOptionGroup::query()->create([
+            'product_id' => $product->id, 'name' => 'Level gula', 'is_required' => true,
+            'minimum_selections' => 1, 'maximum_selections' => 1, 'sort_order' => 0,
+        ]);
+        $value = ProductOptionValue::query()->create([
+            'product_option_group_id' => $group->id, 'name' => 'Normal sugar', 'price_adjustment' => 0,
+            'is_default' => true, 'is_active' => true, 'sort_order' => 0,
+        ]);
+
+        $this->checkout($cashier)
+            ->call('addProduct', $product->public_id)
+            ->assertSet('productOptionsOpen', true)
+            ->set("selectedOptionValuePublicIds.{$group->public_id}", $value->public_id)
+            ->call('confirmProductOptions')
+            ->assertSet('cart.0.product_public_id', $product->public_id)
+            ->assertSet('cart.0.modifier_value_public_ids.0', $value->public_id);
     }
 
     public function test_checkout_preview_uses_sale_calculation_and_empty_cart_cannot_checkout(): void

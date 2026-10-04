@@ -81,6 +81,7 @@ class Checkout extends Component
         return Product::query()
             ->with(['inventory', 'optionGroups.values'])
             ->where('is_active', true)
+            ->where('store_id', $this->currentUser()->store_id)
             ->when($this->selectedCategoryPublicId, function ($query): void {
                 $categoryId = Category::query()->where('public_id', $this->selectedCategoryPublicId)->value('id');
 
@@ -144,11 +145,13 @@ class Checkout extends Component
 
     public function addProduct(string $productPublicId): void
     {
-        $product = Product::query()->with(['inventory', 'optionGroups.values'])->where('is_active', true)->where('public_id', $productPublicId)->first();
+        $product = $this->productForPublicId($productPublicId);
 
         if (! $product) {
             throw ValidationException::withMessages(['product' => 'Produk tidak tersedia.']);
         }
+
+        $this->assertAvailableStock($product, 1);
 
         $groups = $product->optionGroups->filter(fn ($group): bool => $group->values->where('is_active', true)->isNotEmpty());
 
@@ -313,8 +316,10 @@ class Checkout extends Component
         $index = collect($this->cart)->search(fn (array $item): bool => $item['product_public_id'] === $product->public_id && $item['modifier_signature'] === $modifierSignature);
 
         if ($index !== false) {
+            $this->assertAvailableStock($product, (int) $this->cart[$index]['quantity'] + 1);
             $this->cart[$index]['quantity']++;
         } else {
+            $this->assertAvailableStock($product, 1);
             $this->cart[] = [
                 'product_public_id' => $product->public_id,
                 'name' => $product->name,
@@ -360,8 +365,23 @@ class Checkout extends Component
 
     public function increaseQuantity(int $index): void
     {
-        if (isset($this->cart[$index])) {
+        if (! isset($this->cart[$index])) {
+            return;
+        }
+
+        $product = $this->productForPublicId((string) ($this->cart[$index]['product_public_id'] ?? ''));
+
+        if (! $product) {
+            $this->addError('cart', 'Produk pada pesanan tidak tersedia untuk toko ini.');
+
+            return;
+        }
+
+        try {
+            $this->assertAvailableStock($product, (int) $this->cart[$index]['quantity'] + 1);
             $this->cart[$index]['quantity']++;
+        } catch (ValidationException $exception) {
+            $this->addError('cart', 'Stok produk tidak mencukupi.');
         }
     }
 
@@ -425,7 +445,7 @@ class Checkout extends Component
     private function cartForApplication(): array
     {
         return collect($this->cart)->map(function (array $item): array {
-            $product = Product::query()->where('public_id', $item['product_public_id'])->first();
+            $product = $this->productForPublicId((string) $item['product_public_id']);
 
             if (! $product) {
                 throw ValidationException::withMessages(['product' => 'Produk tidak tersedia untuk toko ini.']);
@@ -445,6 +465,29 @@ class Checkout extends Component
                 'modifier_value_ids' => $modifierValueIds,
             ];
         })->all();
+    }
+
+    private function productForPublicId(string $productPublicId): ?Product
+    {
+        return Product::query()
+            ->with(['inventory', 'optionGroups.values'])
+            ->where('store_id', $this->currentUser()->store_id)
+            ->where('is_active', true)
+            ->where('public_id', $productPublicId)
+            ->first();
+    }
+
+    private function assertAvailableStock(Product $product, int $requestedQuantity): void
+    {
+        if (! $product->product_type->tracksInventory()) {
+            return;
+        }
+
+        $availableQuantity = (int) ($product->inventory?->quantity ?? 0);
+
+        if ($availableQuantity < $requestedQuantity) {
+            throw ValidationException::withMessages(['product' => 'Stok produk tidak mencukupi.']);
+        }
     }
 
     public function getSubtotalProperty(): int
