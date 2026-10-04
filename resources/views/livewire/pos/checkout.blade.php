@@ -115,20 +115,22 @@
                             <div class="pos-modal-body mt-6 space-y-4">
                                 <div>
                                     <label class="mb-1 block text-xs text-muted" for="transaction-discount">Diskon transaksi</label>
-                                    <x-filament::input.wrapper prefix="Rp">
-                                        <x-filament::input x-ref="transactionDiscount" id="transaction-discount" min="0" type="number" wire:model.live="manualTransactionDiscount" />
-                                    </x-filament::input.wrapper>
+                                    <div x-data="{ display: new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format({{ (int) $this->manualTransactionDiscount }}), format(value) { const digits = String(value ?? '').replace(/\D/g, ''); return digits ? new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(Number(digits)) : ''; }, update(event) { const digits = String(event.target.value ?? '').replace(/\D/g, ''); const value = digits === '' ? 0 : Number(digits); this.display = this.format(digits); event.target.value = this.display; $wire.set('manualTransactionDiscount', value, false); } }">
+                                        <x-filament::input.wrapper prefix="Rp" class="rounded-lg border border-border bg-surface">
+                                            <x-filament::input x-ref="transactionDiscount" id="transaction-discount" class="!min-h-11" type="text" inputmode="numeric" autocomplete="off" x-bind:value="display" x-on:input="update($event)" />
+                                        </x-filament::input.wrapper>
+                                    </div>
                                 </div>
                                 <div>
                                     <label class="mb-1 block text-xs text-muted" for="promotion-code">Kode promosi</label>
-                                    <div class="flex gap-2">
-                                        <x-filament::input.wrapper class="flex-1"><x-filament::input id="promotion-code" wire:model="promotionCode" /></x-filament::input.wrapper>
-                                        <x-filament::button color="gray" type="button" wire:click="applyPromotion">Pakai</x-filament::button>
+                                    <div x-data="{ code: @entangle('promotionCode').live }" class="flex flex-col gap-2 sm:flex-row">
+                                        <x-filament::input.wrapper class="min-w-0 flex-1 rounded-lg border border-border bg-surface"><x-filament::input id="promotion-code" class="!min-h-11" x-model="code" placeholder="Masukkan kode promosi" /></x-filament::input.wrapper>
+                                        <button class="nl-focus inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-lg border border-blue-200 bg-primary-soft px-4 py-2 text-sm font-bold text-primary hover:border-primary hover:bg-primary-soft-strong disabled:cursor-not-allowed disabled:border-border disabled:bg-slate-100 disabled:text-slate-400" type="button" wire:click="applyPromotion" x-bind:disabled="! code.trim()"><x-filament::icon icon="heroicon-o-tag" class="size-4" aria-hidden="true" /> Pakai</button>
                                     </div>
                                     @if ($redeemCodeId)
-                                        <div class="mt-2 flex items-center justify-between text-success-600">
-                                            <span>Promo {{ strtoupper($promotionCode) }}: − Rp {{ number_format($this->promotionDiscount, 0, ',', '.') }}</span>
-                                            <button class="nl-focus min-h-11 rounded-md px-2 text-xs underline" type="button" wire:click="removePromotion">Hapus</button>
+                                        <div class="mt-3 flex items-center justify-between gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                                            <span class="inline-flex min-w-0 items-center gap-2"><x-filament::icon icon="heroicon-o-tag" class="size-4 shrink-0" aria-hidden="true" /><span class="min-w-0 truncate"><span class="font-bold">{{ strtoupper($promotionCode) }}</span><span class="block text-xs text-emerald-700/80">Diskon Rp {{ number_format($this->promotionDiscount, 0, ',', '.') }}</span></span></span>
+                                            <button class="nl-focus min-h-9 shrink-0 rounded-md px-2 text-xs font-semibold underline hover:bg-emerald-100" type="button" wire:click="removePromotion">Hapus</button>
                                         </div>
                                     @endif
                                 </div>
