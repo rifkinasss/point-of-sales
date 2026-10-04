@@ -7,6 +7,8 @@ use App\Livewire\Cashier\CloseShift;
 use App\Livewire\Cashier\OpenShift;
 use App\Livewire\Cashier\Payment;
 use App\Livewire\Cashier\Receipt;
+use App\Livewire\Manager\Dashboard as ManagerDashboard;
+use App\Livewire\Owner\Dashboard as OwnerDashboard;
 use App\Livewire\Pos\Checkout;
 use Illuminate\Support\Facades\Route;
 
@@ -20,6 +22,8 @@ Route::get('/cashier/pos-checkout', Checkout::class)->middleware('auth')->name('
 Route::get('/cashier/payment-page', Payment::class)->middleware('auth')->name('cashier.payment');
 Route::get('/cashier/receipt-page', Receipt::class)->middleware('auth')->name('cashier.receipt');
 Route::get('/cashier/close-shift', CloseShift::class)->middleware('auth')->name('cashier.close-shift');
+Route::get('/manager', ManagerDashboard::class)->middleware('auth')->name('manager.dashboard');
+Route::get('/owner', OwnerDashboard::class)->middleware('auth')->name('owner.dashboard');
 Route::get('/auth/register', [RegistrationController::class, 'create'])->middleware('guest')->name('auth.register');
 Route::post('/auth/register', [RegistrationController::class, 'store'])->middleware('guest')->name('auth.register.store');
 Route::get('/auth/forgot-password', [PasswordResetController::class, 'requestForm'])->middleware('guest')->name('password.request');
