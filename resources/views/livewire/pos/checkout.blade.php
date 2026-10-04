@@ -136,7 +136,7 @@
                                     @endif
                                 </div>
                             </div>
-                            <div class="pos-modal-footer mt-6 flex items-center justify-end gap-2 border-t border-border pt-5 dark:border-white/10"><button class="nl-focus min-h-11 rounded-lg border border-border bg-surface px-4 py-2 font-semibold text-secondary hover:border-primary hover:text-primary" type="button" x-on:click="closePanel('adjustmentsOpen')">Batal</button><button class="nl-focus min-h-11 rounded-lg bg-primary px-4 py-2 font-bold text-white hover:bg-primary-hover" type="button" wire:click="applyPromotion" x-on:click="adjustmentsOpen = false">Terapkan</button></div>
+                            <div class="pos-modal-footer mt-6 flex items-center justify-end gap-2 border-t border-border pt-5 dark:border-white/10"><button class="nl-focus inline-flex min-h-11 items-center gap-2 rounded-lg border border-border bg-surface px-4 py-2 font-semibold text-secondary hover:border-primary hover:text-primary" type="button" x-on:click="closePanel('adjustmentsOpen')"><x-filament::icon icon="heroicon-o-x-mark" class="size-4" aria-hidden="true" /> Batal</button><button class="nl-focus inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-4 py-2 font-bold text-white hover:bg-primary-hover" type="button" wire:click="applyPromotion" x-on:click="adjustmentsOpen = false"><x-filament::icon icon="heroicon-o-check" class="size-4" aria-hidden="true" /> Terapkan</button></div>
                         </section>
                     </div>
                 </div>
