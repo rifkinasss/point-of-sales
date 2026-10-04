@@ -139,6 +139,7 @@ class PosCheckoutTest extends TestCase
 
         $component = $this->checkout($cashier)
             ->call('addProduct', $product->id)
+            ->assertDontSee('Ubah opsi')
             ->assertSet('cart.0.quantity', 1)
             ->call('increaseQuantity', 0)
             ->assertSet('cart.0.quantity', 2)

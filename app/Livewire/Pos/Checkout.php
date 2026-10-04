@@ -8,6 +8,7 @@ use App\Models\CashierShift;
 use App\Models\Category;
 use App\Models\Customer;
 use App\Models\Product;
+use App\Models\ProductOptionGroup;
 use App\Models\ProductOptionValue;
 use App\Models\Promotion;
 use App\Models\User;
@@ -316,6 +317,9 @@ class Checkout extends Component
                 'modifier_total' => $modifierTotal,
                 'modifiers' => $modifiers,
                 'modifier_value_ids' => $modifierValueIds,
+                'has_options' => $product->optionGroups
+                    ->filter(fn (ProductOptionGroup $group): bool => $group->values->where('is_active', true)->isNotEmpty())
+                    ->isNotEmpty(),
                 'modifier_signature' => $modifierSignature,
             ];
         }

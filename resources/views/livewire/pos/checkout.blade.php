@@ -81,7 +81,9 @@
                                 <div class="truncate font-semibold text-foreground dark:text-white">{{ $item['name'] }}</div>
                             </div>
                             <div class="inline-flex shrink-0 items-center gap-1">
-                                <button class="nl-focus inline-flex min-h-8 items-center gap-1 rounded-md bg-primary-soft px-2 text-[11px] font-semibold text-primary hover:bg-primary-soft-strong" type="button" wire:click="editItemOptions({{ $index }})" aria-label="Ubah opsi produk"><x-filament::icon icon="heroicon-o-adjustments-horizontal" class="size-3.5 shrink-0" aria-hidden="true" /> <span class="hidden sm:inline">Ubah opsi</span></button>
+                                @if ($item['has_options'] ?? false)
+                                    <button class="nl-focus inline-flex min-h-8 items-center gap-1 rounded-md bg-primary-soft px-2 text-[11px] font-semibold text-primary hover:bg-primary-soft-strong" type="button" wire:click="editItemOptions({{ $index }})" aria-label="Ubah opsi produk"><x-filament::icon icon="heroicon-o-adjustments-horizontal" class="size-3.5 shrink-0" aria-hidden="true" /> <span class="hidden sm:inline">Ubah opsi</span></button>
+                                @endif
                                 <button class="nl-focus inline-flex min-h-8 items-center justify-center rounded-md px-2 text-muted hover:bg-red-50 hover:text-danger-600" type="button" wire:click="removeItem({{ $index }})" aria-label="Hapus produk dari pesanan"><x-filament::icon icon="heroicon-o-trash" class="size-4 shrink-0" aria-hidden="true" /><span class="sr-only">Hapus</span></button>
                             </div>
                         </div>
