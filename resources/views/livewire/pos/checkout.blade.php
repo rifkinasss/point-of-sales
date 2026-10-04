@@ -1,4 +1,4 @@
-<div class="pos-screen pos-checkout-workspace" x-data x-on:keydown.window="if (event.key === 'F2') { event.preventDefault(); $refs.productSearch.focus() } if (event.key === 'F4') { event.preventDefault(); $refs.customerSearch.focus() } if (event.key === 'F6') { event.preventDefault(); $refs.transactionDiscount.focus() } if (event.key === 'F8') { event.preventDefault(); $refs.payButton.click() }">
+<div class="pos-screen pos-checkout-workspace" x-data x-on:keydown.window="const isEditing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(event.target.tagName) || event.target.isContentEditable; if (! isEditing && event.key === 'F2') { event.preventDefault(); $refs.productSearch.focus() } if (! isEditing && event.key === 'F8' && ! $refs.payButton.disabled) { event.preventDefault(); $refs.payButton.click() }">
         <header class="pos-workstation-header">
             <div class="flex min-w-0 items-center gap-3">
                 <span class="grid size-11 shrink-0 place-items-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-500/25"><x-filament::icon icon="heroicon-o-shopping-bag" class="size-6" /></span>
@@ -26,14 +26,16 @@
                     type="search"
                 />
             </x-filament::input.wrapper>
-            <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500"><span>Enter untuk barcode</span><span><kbd>F2</kbd> cari produk</span><span><kbd>F4</kbd> pelanggan</span><span><kbd>F8</kbd> bayar</span></div>
+            <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500"><span>Enter untuk barcode</span><span><kbd>F2</kbd> cari produk</span><span><kbd>F8</kbd> bayar</span></div>
+            <div wire:loading.flex wire:target="search" class="mt-2 items-center gap-2 text-xs font-semibold text-indigo-600"><span class="size-2 animate-pulse rounded-full bg-indigo-600"></span>Mencari produk…</div>
 
             <div class="mt-4 flex gap-2 overflow-x-auto pb-2">
-                <button class="shrink-0 rounded-full border px-4 py-2 text-sm font-semibold transition {{ $selectedCategoryId === null ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm' : 'border-gray-200 bg-white text-gray-600 hover:border-indigo-300 hover:text-indigo-700 dark:border-white/10 dark:bg-white/5 dark:text-gray-300' }}" type="button" wire:click="selectCategory">Semua</button>
+                <button class="shrink-0 rounded-full border px-4 py-2 text-sm font-semibold transition {{ $selectedCategoryId === null ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm' : 'border-gray-200 bg-white text-gray-600 hover:border-indigo-300 hover:text-indigo-700 dark:border-white/10 dark:bg-white/5 dark:text-gray-300' }}" type="button" wire:click="selectCategory" wire:loading.attr="disabled" wire:target="selectCategory">Semua</button>
                 @foreach ($this->categories as $category)
-                    <button class="shrink-0 rounded-full border px-4 py-2 text-sm font-semibold transition {{ $selectedCategoryId === $category->id ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm' : 'border-gray-200 bg-white text-gray-600 hover:border-indigo-300 hover:text-indigo-700 dark:border-white/10 dark:bg-white/5 dark:text-gray-300' }}" type="button" wire:click="selectCategory({{ $category->id }})">{{ $category->name }}</button>
+                    <button class="shrink-0 rounded-full border px-4 py-2 text-sm font-semibold transition {{ $selectedCategoryId === $category->id ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm' : 'border-gray-200 bg-white text-gray-600 hover:border-indigo-300 hover:text-indigo-700 dark:border-white/10 dark:bg-white/5 dark:text-gray-300' }}" type="button" wire:click="selectCategory({{ $category->id }})" wire:loading.attr="disabled" wire:target="selectCategory">{{ $category->name }}</button>
                 @endforeach
             </div>
+            <div wire:loading.flex wire:target="selectCategory" class="mt-1 items-center gap-2 text-xs font-semibold text-gray-500">Memuat kategori…</div>
 
             <div class="pos-product-grid mt-5 grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
                 @forelse ($this->products as $product)
@@ -76,11 +78,11 @@
                         </div>
                         <div class="mt-2 flex items-center justify-between">
                             <div class="flex items-center gap-2">
-                                <x-filament::button color="gray" size="sm" type="button" wire:click="decreaseQuantity({{ $index }})">−</x-filament::button>
+                                <x-filament::button color="gray" size="sm" type="button" wire:click="decreaseQuantity({{ $index }})" wire:loading.attr="disabled" wire:target="decreaseQuantity">−</x-filament::button>
                                 <span class="min-w-6 text-center">{{ $item['quantity'] }}</span>
-                                <x-filament::button color="gray" size="sm" type="button" wire:click="increaseQuantity({{ $index }})">+</x-filament::button>
+                                <x-filament::button color="gray" size="sm" type="button" wire:click="increaseQuantity({{ $index }})" wire:loading.attr="disabled" wire:target="increaseQuantity">+</x-filament::button>
                             </div>
-                            <span class="font-medium">Rp {{ number_format((($item['price'] + $item['modifier_total']) * $item['quantity']) - min($item['discount'], ($item['price'] + $item['modifier_total']) * $item['quantity']), 0, ',', '.') }}</span>
+                            <span class="font-medium">Rp {{ number_format((int) ($this->saleCalculation?->items[$index]['line_total'] ?? 0), 0, ',', '.') }}</span>
                         </div>
                         <div class="mt-2">
                             <label class="text-xs text-gray-500" for="item-discount-{{ $index }}">Diskon item</label>
@@ -124,11 +126,11 @@
             </div>
 
             @if (count($cart) > 0)
-                <button class="mt-3 w-full text-center text-xs font-bold text-gray-500 hover:text-danger-600" type="button" wire:click="clearCart">Kosongkan keranjang</button>
+                <button class="mt-3 w-full text-center text-xs font-bold text-gray-500 hover:text-danger-600" type="button" wire:click="clearCart" wire:confirm="Kosongkan semua item dari keranjang?">Kosongkan keranjang</button>
             @endif
 
-            <x-filament::button x-ref="payButton" class="pos-pay-button mt-4 w-full" size="lg" wire:click="createPendingSale" :disabled="count($cart) === 0">
-                <x-filament::icon icon="heroicon-o-credit-card" class="mr-2 size-5" /> Lanjut ke pembayaran
+            <x-filament::button x-ref="payButton" class="pos-pay-button mt-4 w-full" size="lg" wire:click="createPendingSale" wire:loading.attr="disabled" wire:target="createPendingSale" :disabled="count($cart) === 0 || $this->saleCalculation === null">
+                <x-filament::icon icon="heroicon-o-credit-card" class="mr-2 size-5" /> Bayar · Rp {{ number_format($this->grandTotal, 0, ',', '.') }}
             </x-filament::button>
             <div wire:loading.flex wire:target="createPendingSale,addProduct,scanProduct" class="mt-3 items-center justify-center gap-2 text-xs font-semibold text-indigo-600"><span class="size-2 animate-pulse rounded-full bg-indigo-600"></span>Memproses transaksi…</div>
         </x-filament::section>
@@ -136,7 +138,7 @@
     </div>
 
     @if ($productOptionsOpen && $this->productForOptions)
-        <div x-data="{ open: true }" x-show="open" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/50 p-4 backdrop-blur-sm" wire:key="product-options-dialog-{{ $productForOptionsId }}">
+        <div x-data="{ open: true }" x-on:keydown.escape.window="open = false; $wire.cancelProductOptions()" x-show="open" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/50 p-4 backdrop-blur-sm" wire:key="product-options-dialog-{{ $productForOptionsId }}">
             <div class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-900">
                 <form wire:submit="confirmProductOptions" x-on:submit="open = false">
                 <div class="flex items-start justify-between gap-4">
@@ -166,7 +168,7 @@
     @endif
 
     @if ($newMemberModalOpen)
-        <div x-data="{ open: true }" x-show="open" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/50 p-4 backdrop-blur-sm" wire:key="new-member-dialog">
+        <div x-data="{ open: true }" x-on:keydown.escape.window="open = false; $wire.cancelNewMember()" x-show="open" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/50 p-4 backdrop-blur-sm" wire:key="new-member-dialog">
             <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-900">
                 <form wire:submit="createMember" x-on:submit="open = false">
                     <div class="flex items-start justify-between gap-4"><div><p class="text-sm font-bold text-indigo-600">MEMBER BARU</p><h2 class="mt-1 text-xl font-black">Daftarkan pelanggan</h2><p class="mt-1 text-sm text-gray-500">Kode member dibuat otomatis dan langsung dipilih.</p></div><button class="rounded-lg p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10" type="button" wire:click="cancelNewMember" x-on:click="open = false"><x-filament::icon icon="heroicon-o-x-mark" class="size-5" /></button></div>
