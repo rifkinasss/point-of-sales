@@ -25,6 +25,7 @@
 - Tax belum menjadi field snapshot pada `sales`; calculator saat ini memakai `tax_total = 0`. Penambahan tax ditunda sampai aturan pajak dan schema disepakati.
 - Product display price masih memakai lookup presentation untuk responsivitas, sedangkan subtotal, item discount, promotion discount, transaction discount, dan grand total preview kini memakai `SaleCalculator`; nilai final tetap dihitung ulang oleh action server-side.
 - Payment split sudah tersedia dengan row lock dan state validation; distributed idempotency dan payment gateway tetap deferred.
+- Payment portfolio scope saat ini: cash internal, manual QRIS, dan manual bank transfer. Dynamic QRIS, virtual account, payment gateway, provider webhook, automatic settlement verification, dan E-Wallet integration tetap `DEFERRED`.
 - Authorization refund/void ditegakkan di action dan juga disembunyikan pada Sales table; policy class khusus belum ada.
 - Inventory saat ini single-store per product (`inventories.product_id` unique), bukan ledger balance per store. Cross-store dijaga melalui store pada product/sale/shift/customer.
 - Payment status sudah mendukung `pending`, `completed`, `failed`, dan `refunded`; refund per payment tetap deferred karena refund masih full-sale.

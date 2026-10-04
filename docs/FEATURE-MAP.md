@@ -15,6 +15,8 @@ Status capability berdasarkan source aktual setelah presentation migration.
 | Cash register ledger | Available | `CashMovement`, `CashBalanceCalculator`, opening/payment/refund/cash in/cash out integration |
 | Partial return | Missing | Tidak ditemukan action atau UI partial return |
 | Split payment | Available | Sale 1:N Payment, `AddPaymentAction`, dan payment modal pada `Cashier\PosCheckout` mendukung alokasi bertahap |
+| Manual payment methods | Available | Tunai, manual QRIS, dan manual bank transfer; semua memakai `AddPaymentAction` |
+| Payment gateway integration | Deferred | Dynamic QRIS, virtual account, webhook, automatic settlement, dan E-Wallet integration belum diimplementasikan |
 | Purchasing dan receiving | Partial | Purchase resources/actions tersedia; workflow item perlu validasi lebih lanjut |
 | Sales report | Partial | Admin Filament report tersedia; manager/owner operational report modules belum lengkap |
 | Cash movement ledger | Available | `CashMovement` dan shift reconciliation tersedia |

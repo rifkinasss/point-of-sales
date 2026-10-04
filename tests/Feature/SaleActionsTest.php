@@ -172,6 +172,53 @@ class SaleActionsTest extends TestCase
         ]);
     }
 
+    public function test_manual_bank_transfer_payment_stores_reference_without_cash_movement(): void
+    {
+        [$cashier, $product, $shift] = $this->prepareSaleContext(10);
+        $sale = app(CreatePendingSaleAction::class)->handle($shift, $cashier, [
+            ['product_id' => $product->id, 'quantity' => 1],
+        ]);
+
+        $paid = app(AddPaymentAction::class)->handle(
+            $sale,
+            $cashier,
+            PaymentMethod::BankTransfer,
+            10000,
+            10000,
+            'TRF-MANUAL-001',
+        );
+
+        $this->assertSame(SaleStatus::Paid, $paid->status);
+        $this->assertDatabaseHas('payments', [
+            'sale_id' => $sale->id,
+            'method' => PaymentMethod::BankTransfer->value,
+            'amount_due' => 10000,
+            'amount_received' => 10000,
+            'reference_number' => 'TRF-MANUAL-001',
+        ]);
+        $this->assertDatabaseMissing('cash_movements', [
+            'shift_id' => $shift->id,
+            'type' => CashMovementType::Sale->value,
+        ]);
+    }
+
+    public function test_split_cash_and_manual_transfer_completes_sale_and_records_cash_only_for_cash_portion(): void
+    {
+        [$cashier, $product, $shift] = $this->prepareSaleContext(10);
+        $sale = app(CreatePendingSaleAction::class)->handle($shift, $cashier, [
+            ['product_id' => $product->id, 'quantity' => 1],
+        ]);
+
+        app(AddPaymentAction::class)->handle($sale, $cashier, PaymentMethod::Cash, 4000, 4000);
+        $paid = app(AddPaymentAction::class)->handle($sale, $cashier, PaymentMethod::BankTransfer, 6000, 6000, 'TRF-SPLIT-001');
+
+        $this->assertSame(SaleStatus::Paid, $paid->status);
+        $this->assertSame(10000, $paid->payments->sum('amount_due'));
+        $this->assertSame(2, $paid->payments->count());
+        $this->assertSame(1, $shift->cashMovements()->where('type', CashMovementType::Sale)->count());
+        $this->assertSame(4000, $shift->cashMovements()->where('type', CashMovementType::Sale)->value('amount'));
+    }
+
     public function test_sale_accepts_split_payment_and_remains_pending_until_fully_allocated(): void
     {
         [$cashier, $product, $shift] = $this->prepareSaleContext(10);

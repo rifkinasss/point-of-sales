@@ -17,6 +17,9 @@ use Livewire\Attributes\Layout;
 #[Layout('components.layouts.cashier', ['title' => 'POS Kasir'])]
 class PosCheckout extends PosCheckoutComponent
 {
+    /** @var list<string> */
+    private const MANUAL_PAYMENT_METHODS = ['cash', 'qris', 'bank_transfer'];
+
     public bool $paymentModalOpen = false;
 
     public ?Sale $paymentSale = null;
@@ -59,7 +62,7 @@ class PosCheckout extends PosCheckoutComponent
     {
         $paymentMethod = PaymentMethod::tryFrom($method);
 
-        if (! $paymentMethod) {
+        if (! $paymentMethod || ! in_array($paymentMethod->value, self::MANUAL_PAYMENT_METHODS, true)) {
             return;
         }
 
@@ -79,7 +82,7 @@ class PosCheckout extends PosCheckoutComponent
         }
 
         $data = $this->validate([
-            'paymentMethod' => ['required', 'in:cash,bank_transfer,qris,e_wallet'],
+            'paymentMethod' => ['required', 'in:cash,bank_transfer,qris'],
             'paymentAmount' => ['required', 'integer', 'min:1'],
             'cashReceived' => ['required', 'integer', 'min:0'],
             'paymentReference' => ['nullable', 'string', 'max:100'],
@@ -199,6 +202,21 @@ class PosCheckout extends PosCheckoutComponent
         }
 
         return max(0, $this->cashReceived - $this->paymentAmount);
+    }
+
+    public function getManualQrisImageProperty(): ?string
+    {
+        return config('payment.manual_qris.image_url');
+    }
+
+    /** @return array{bank_name: ?string, account_number: ?string, account_holder: ?string} */
+    public function getManualTransferDetailsProperty(): array
+    {
+        return [
+            'bank_name' => config('payment.manual_transfer.bank_name'),
+            'account_number' => config('payment.manual_transfer.account_number'),
+            'account_holder' => config('payment.manual_transfer.account_holder'),
+        ];
     }
 
     private function openPaymentForSale(int $saleId): void
