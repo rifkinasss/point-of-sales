@@ -31,6 +31,7 @@
 - Payment status sudah mendukung `pending`, `completed`, `failed`, dan `refunded`; refund per payment tetap deferred karena refund masih full-sale.
 - Cashier payment, receipt, and close-shift presentation sudah dipindahkan ke Livewire; browser-level smoke coverage untuk seluruh flow masih perlu ditambahkan.
 - Refund cash pada shift yang sudah ditutup belum memiliki kebijakan operasional khusus; post-close refund governance tetap deferred.
-- Public identifier coverage is complete for current POS browser state (sale invoice number plus ULIDs for product, category, customer, and modifier entities). Admin Filament and non-routed back-office foreign keys intentionally remain numeric; future public purchase, supplier, payment, shift, and cash-movement APIs need their own identifiers before being exposed.
+- Public identifier coverage is complete for current POS browser state (`Sale.public_id` plus ULIDs for product, category, customer, and modifier entities). `invoice_number` is a readable business reference only. Admin Filament and non-routed back-office foreign keys intentionally remain numeric; future public purchase, supplier, payment, shift, and cash-movement APIs need their own identifiers before being exposed.
+- Branch master data is currently represented by optional `stores.branch_code`; a separate Branch aggregate and branch management workflow are deferred until the product needs multiple branches under one store tenant.
 
 Dokumen ini bukan desain target dan tidak mengubah business logic.

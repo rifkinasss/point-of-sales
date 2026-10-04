@@ -3,15 +3,16 @@
 namespace App\Livewire\Cashier;
 
 use App\Enums\SaleStatus;
+use App\Enums\UserRole;
+use App\Mail\ReceiptMail;
 use App\Models\Sale;
 use App\Models\User;
-use App\Mail\ReceiptMail;
 use Illuminate\Support\Facades\Mail;
 use Livewire\Component;
 
 class Receipt extends Component
 {
-    public ?string $saleInvoiceNumber = null;
+    public ?string $salePublicId = null;
 
     public string $receiptEmail = '';
 
@@ -19,7 +20,7 @@ class Receipt extends Component
 
     public function mount(): void
     {
-        $sale = Sale::query()->where('invoice_number', request()->string('sale')->toString())->where('cashier_id', $this->currentUser()->id)->where('store_id', $this->currentUser()->store_id)->where('status', SaleStatus::Paid)->first();
+        $sale = Sale::query()->where('public_id', request()->string('sale')->toString())->where('cashier_id', $this->currentUser()->id)->where('store_id', $this->currentUser()->store_id)->where('status', SaleStatus::Paid)->first();
 
         if (! $sale) {
             $this->redirect('/cashier/pos');
@@ -27,14 +28,16 @@ class Receipt extends Component
             return;
         }
 
-        $this->saleInvoiceNumber = $sale->invoice_number;
+        $this->salePublicId = $sale->public_id;
         $this->receiptEmail = $sale->customer?->email ?? '';
     }
 
     public function emailReceipt(): void
     {
         $this->validate(['receiptEmail' => ['required', 'email']]);
-        if (! $this->sale) return;
+        if (! $this->sale) {
+            return;
+        }
         Mail::to($this->receiptEmail)->send(new ReceiptMail($this->sale));
         $this->message = 'Struk telah dikirim ke email pelanggan.';
     }
@@ -46,15 +49,15 @@ class Receipt extends Component
 
     public function getSaleProperty(): ?Sale
     {
-        return $this->saleInvoiceNumber
-            ? Sale::query()->with(['items', 'payments', 'cashier', 'customer', 'store'])->where('invoice_number', $this->saleInvoiceNumber)->where('cashier_id', $this->currentUser()->id)->where('store_id', $this->currentUser()->store_id)->where('status', SaleStatus::Paid)->first()
+        return $this->salePublicId
+            ? Sale::query()->with(['items', 'payments', 'cashier', 'customer', 'store'])->where('public_id', $this->salePublicId)->where('cashier_id', $this->currentUser()->id)->where('store_id', $this->currentUser()->store_id)->where('status', SaleStatus::Paid)->first()
             : null;
     }
 
     private function currentUser(): User
     {
         $user = request()->user();
-        abort_unless($user instanceof User && $user->role === \App\Enums\UserRole::Cashier && $user->is_active, 403);
+        abort_unless($user instanceof User && $user->role === UserRole::Cashier && $user->is_active, 403);
 
         return $user;
     }

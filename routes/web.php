@@ -25,7 +25,7 @@ Route::get('/cashier/pos', PosCheckout::class)->middleware('auth')->name('cashie
 Route::get('/cashier/pos-checkout', PosCheckout::class)->middleware('auth')->name('cashier.pos.legacy');
 Route::get('/cashier/payment-page', PosCheckout::class)->middleware('auth')->name('cashier.payment');
 Route::get('/cashier/receipt-page', Receipt::class)->middleware('auth')->name('cashier.receipt');
-Route::get('/cashier/receipts/{sale:invoice_number}/print', CashierReceiptPrintController::class)->middleware('auth')->name('cashier.receipt.print');
+Route::get('/cashier/receipts/{sale:public_id}/print', CashierReceiptPrintController::class)->middleware('auth')->name('cashier.receipt.print');
 Route::get('/cashier/close-shift', CloseShift::class)->middleware('auth')->name('cashier.close-shift');
 Route::get('/manager', ManagerDashboard::class)->middleware('auth')->name('manager.dashboard');
 Route::get('/owner', OwnerDashboard::class)->middleware('auth')->name('owner.dashboard');

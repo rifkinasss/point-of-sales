@@ -16,7 +16,10 @@ class SaleForm
         return $schema
             ->components([
                 TextInput::make('invoice_number')
-                    ->required(),
+                    ->required()
+                    ->disabled()
+                    ->dehydrated(false)
+                    ->helperText('Nomor invoice dibuat otomatis dan tidak dapat diubah.'),
                 Select::make('cashier_shift_id')
                     ->relationship('cashierShift', 'id')
                     ->required(),

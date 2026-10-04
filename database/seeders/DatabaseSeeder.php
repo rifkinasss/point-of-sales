@@ -2,15 +2,15 @@
 
 namespace Database\Seeders;
 
-use App\Enums\PaymentMethod;
 use App\Enums\CashMovementType;
+use App\Enums\PaymentMethod;
 use App\Enums\SaleStatus;
 use App\Enums\ShiftStatus;
 use App\Enums\StockMovementType;
 use App\Enums\UserRole;
 use App\Models\CashierShift;
-use App\Models\Category;
 use App\Models\CashMovement;
+use App\Models\Category;
 use App\Models\Customer;
 use App\Models\Inventory;
 use App\Models\Payment;
@@ -33,13 +33,13 @@ class DatabaseSeeder extends Seeder
             $store = Store::query()->updateOrCreate(['slug' => 'naslabs-market'], [
                 'name' => 'NasLabs Market', 'phone' => '0812-3456-7890', 'email' => 'market@naslabs.id',
                 'address' => 'Jl. Sudirman No. 88, Samarinda', 'currency' => 'IDR', 'timezone' => 'Asia/Makassar',
-                'invoice_prefix' => 'NLM', 'tax_percentage' => 11, 'receipt_footer' => 'Terima kasih sudah berbelanja di NasLabs Market.',
+                'store_code' => 'NAS', 'branch_code' => null, 'invoice_prefix' => 'NLM', 'tax_percentage' => 11, 'receipt_footer' => 'Terima kasih sudah berbelanja di NasLabs Market.',
                 'receipt_show_cashier' => true, 'receipt_show_tax' => true,
             ]);
             Store::query()->updateOrCreate(['slug' => 'borneo-kiosk'], [
                 'name' => 'Borneo Kiosk', 'phone' => '0852-1111-2233', 'email' => 'halo@borneokiosk.id',
                 'address' => 'Jl. Pahlawan No. 12, Balikpapan', 'currency' => 'IDR', 'timezone' => 'Asia/Makassar',
-                'invoice_prefix' => 'BRN', 'tax_percentage' => 0, 'receipt_footer' => 'Sampai jumpa kembali.',
+                'store_code' => 'BRN', 'branch_code' => null, 'invoice_prefix' => 'BRN', 'tax_percentage' => 0, 'receipt_footer' => 'Sampai jumpa kembali.',
                 'receipt_show_cashier' => true, 'receipt_show_tax' => false,
             ]);
 
@@ -121,8 +121,11 @@ class DatabaseSeeder extends Seeder
                 'note' => 'Shift demo',
             ]);
             foreach ([0 => 42000, 1 => 57000, 2 => 68000, 3 => 51000, 4 => 74000, 5 => 63000, 6 => 89000] as $daysAgo => $total) {
-                $date = now()->subDays($daysAgo)->setTime(10, 15);
-                $sale = Sale::withoutGlobalScopes()->updateOrCreate(['invoice_number' => 'NLM-DEMO-'.str_pad((string) (7 - $daysAgo), 3, '0', STR_PAD_LEFT)], [
+                $date = now()->subDays($daysAgo)->setTimezone($store->timezone)->setTime(10, 15);
+                $businessDate = $date->toDateString();
+                $sequence = 7 - $daysAgo;
+                $invoiceNumber = $store->store_code.'-'.$date->format('Ymd').'-'.str_pad((string) $sequence, 6, '0', STR_PAD_LEFT);
+                $sale = Sale::withoutGlobalScopes()->updateOrCreate(['invoice_number' => $invoiceNumber], [
                     'store_id' => $store->id, 'cashier_shift_id' => $shift->id, 'cashier_id' => $cashier->id, 'status' => SaleStatus::Paid,
                     'subtotal' => $total, 'item_discount_total' => 0, 'promotion_discount_total' => 0, 'transaction_discount_total' => 0, 'grand_total' => $total, 'completed_at' => $date,
                 ]);
@@ -144,6 +147,17 @@ class DatabaseSeeder extends Seeder
                         'note' => 'Seed '.$sale->invoice_number,
                     ]);
                 }
+
+                DB::table('invoice_sequences')->updateOrInsert([
+                    'store_id' => $store->id,
+                    'branch_code' => $store->branch_code,
+                    'business_date' => $businessDate,
+                ], [
+                    'scope_key' => $store->id.'|'.($store->branch_code ?: '-').'|'.$businessDate,
+                    'last_sequence' => $sequence,
+                    'updated_at' => now(),
+                    'created_at' => now(),
+                ]);
             }
         });
 

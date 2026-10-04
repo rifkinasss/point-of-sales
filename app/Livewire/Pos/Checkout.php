@@ -11,6 +11,7 @@ use App\Models\Product;
 use App\Models\ProductOptionGroup;
 use App\Models\ProductOptionValue;
 use App\Models\Promotion;
+use App\Models\Sale;
 use App\Models\User;
 use App\Services\SaleCalculator;
 use Filament\Notifications\Notification;
@@ -348,8 +349,13 @@ class Checkout extends Component
             ->where(fn ($query) => $query->whereNull('starts_at')->orWhere('starts_at', '<=', now()))
             ->where(fn ($query) => $query->whereNull('ends_at')->orWhere('ends_at', '>=', now()))
             ->orderByDesc('value')->first();
-        if (! $promotion) return $product->selling_price;
-        return match ($promotion->type) { 'percentage' => max(0, $product->selling_price - (int) round($product->selling_price * min(100, $promotion->value) / 100)), 'fixed' => max(0, $product->selling_price - $promotion->value), 'fixed_price' => $promotion->value, default => $product->selling_price };
+        if (! $promotion) {
+            return $product->selling_price;
+        }
+
+        return match ($promotion->type) {
+            'percentage' => max(0, $product->selling_price - (int) round($product->selling_price * min(100, $promotion->value) / 100)), 'fixed' => max(0, $product->selling_price - $promotion->value), 'fixed_price' => $promotion->value, default => $product->selling_price
+        };
     }
 
     public function increaseQuantity(int $index): void
@@ -392,10 +398,10 @@ class Checkout extends Component
         $sale = $this->createPendingSaleRecord();
 
         $this->cart = [];
-        $this->redirect(route('cashier.payment', ['sale' => $sale->invoice_number]));
+        $this->redirect(route('cashier.payment', ['sale' => $sale->public_id]));
     }
 
-    protected function createPendingSaleRecord(): \App\Models\Sale
+    protected function createPendingSaleRecord(): Sale
     {
         $shift = $this->currentShift();
 
@@ -687,5 +693,4 @@ class Checkout extends Component
     {
         return $this->currentShift();
     }
-
 }

@@ -3,18 +3,18 @@
 namespace Tests\Feature;
 
 use App\Actions\Inventory\RecordInitialStockAction;
-use App\Actions\Sale\CreatePendingSaleAction;
 use App\Actions\Sale\AddPaymentAction;
+use App\Actions\Sale\CreatePendingSaleAction;
 use App\Actions\Sale\ProcessPaymentAction;
 use App\Actions\Sale\RefundSaleAction;
 use App\Actions\Sale\VoidSaleAction;
 use App\Actions\Shift\CloseShiftAction;
 use App\Actions\Shift\OpenShiftAction;
+use App\Enums\CashMovementType;
 use App\Enums\PaymentMethod;
+use App\Enums\PaymentStatus;
 use App\Enums\SaleStatus;
 use App\Enums\StockMovementType;
-use App\Enums\CashMovementType;
-use App\Enums\PaymentStatus;
 use App\Enums\UserRole;
 use App\Models\CashierShift;
 use App\Models\Customer;
@@ -22,7 +22,9 @@ use App\Models\Product;
 use App\Models\Store;
 use App\Models\Unit;
 use App\Models\User;
+use App\Services\InvoiceNumberGenerator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
@@ -84,8 +86,45 @@ class SaleActionsTest extends TestCase
         $second = app(CreatePendingSaleAction::class)->handle($shift, $manager, [['product_id' => $product->id, 'quantity' => 1]]);
 
         $this->assertNotSame($first->invoice_number, $second->invoice_number);
-        $this->assertStringStartsWith('POS-'.now()->format('Ymd').'-', $first->invoice_number);
+        $this->assertMatchesRegularExpression('/^[A-Z0-9]{3}-'.now()->format('Ymd').'-000001$/', $first->invoice_number);
+        $this->assertMatchesRegularExpression('/^[A-Z0-9]{3}-'.now()->format('Ymd').'-000002$/', $second->invoice_number);
         $this->assertDatabaseCount('sales', 2);
+    }
+
+    public function test_invoice_sequence_is_independent_per_branch_and_business_date(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-10-04 23:30:00', 'Asia/Makassar'));
+        $store = Store::query()->create([
+            'name' => 'Toko bercabang uji',
+            'slug' => 'toko-bercabang-uji',
+            'store_code' => 'NAS',
+            'branch_code' => 'BPPUTM',
+            'timezone' => 'Asia/Makassar',
+        ]);
+        $generator = app(InvoiceNumberGenerator::class);
+
+        $this->assertSame('NAS-BPPUTM-20261004-000001', $generator->generate($store));
+        $this->assertSame('NAS-BPPUTM-20261004-000002', $generator->generate($store));
+
+        $store->update(['branch_code' => 'SAMAR']);
+        $this->assertSame('NAS-SAMAR-20261004-000001', $generator->generate($store));
+
+        $store->update(['branch_code' => null]);
+        $this->assertSame('NAS-20261004-000001', $generator->generate($store));
+
+        Carbon::setTestNow(Carbon::parse('2026-10-05 00:01:00', 'Asia/Makassar'));
+        $this->assertSame('NAS-20261005-000001', $generator->generate($store));
+        Carbon::setTestNow();
+    }
+
+    public function test_invoice_number_is_immutable_and_sale_has_a_public_identifier(): void
+    {
+        [$manager, $product, $shift] = $this->prepareSaleContext(10);
+        $sale = app(CreatePendingSaleAction::class)->handle($shift, $manager, [['product_id' => $product->id, 'quantity' => 1]]);
+
+        $this->assertNotEmpty($sale->public_id);
+        $this->expectException(\LogicException::class);
+        $sale->update(['invoice_number' => 'NAS-20990101-999999']);
     }
 
     public function test_cross_store_customer_and_sale_payment_are_rejected(): void

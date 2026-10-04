@@ -21,6 +21,7 @@ use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
+use Livewire\Testing\Testable;
 use Tests\TestCase;
 
 class PosCheckoutTest extends TestCase
@@ -80,7 +81,7 @@ class PosCheckoutTest extends TestCase
         );
 
         $this->actingAs($cashier)
-            ->get('/cashier/payment-page?sale='.$sale->invoice_number)
+            ->get('/cashier/payment-page?sale='.$sale->public_id)
             ->assertOk()
             ->assertSee('Selesaikan transaksi')
             ->assertSee('ALOKASI PEMBAYARAN');
@@ -111,7 +112,7 @@ class PosCheckoutTest extends TestCase
         app(AddPaymentAction::class)->handle($sale, $cashier, PaymentMethod::Cash, 10000, 12000);
 
         $this->actingAs($cashier)
-            ->get(route('cashier.receipt.print', ['sale' => $sale->invoice_number]))
+            ->get(route('cashier.receipt.print', ['sale' => $sale->public_id]))
             ->assertOk()
             ->assertSee('STRUK PEMBAYARAN')
             ->assertSee($sale->invoice_number)
@@ -136,7 +137,7 @@ class PosCheckoutTest extends TestCase
         $sale->store()->update(['logo_path' => 'store-logos/test.png']);
 
         $this->actingAs($cashier)
-            ->get(route('cashier.receipt.print', ['sale' => $sale->invoice_number]))
+            ->get(route('cashier.receipt.print', ['sale' => $sale->public_id]))
             ->assertOk()
             ->assertSee('alt="Logo Toko POS uji"', false)
             ->assertSee('/storage/store-logos/test.png', false);
@@ -154,7 +155,7 @@ class PosCheckoutTest extends TestCase
         $sale->store()->update(['logo_path' => 'store-logos/missing.png']);
 
         $this->actingAs($cashier)
-            ->get(route('cashier.receipt.print', ['sale' => $sale->invoice_number]))
+            ->get(route('cashier.receipt.print', ['sale' => $sale->public_id]))
             ->assertOk()
             ->assertSee('Toko POS uji')
             ->assertDontSee('alt="Logo Toko POS uji"', false);
@@ -175,7 +176,22 @@ class PosCheckoutTest extends TestCase
             ->assertNotFound();
     }
 
-    public function test_unknown_receipt_invoice_is_not_found(): void
+    public function test_business_invoice_number_is_not_a_receipt_identifier(): void
+    {
+        [$cashier, $product] = $this->prepareCheckoutContext();
+        $sale = app(CreatePendingSaleAction::class)->handle(
+            $cashier->cashierShifts()->where('status', 'open')->firstOrFail(),
+            $cashier,
+            [['product_id' => $product->id, 'quantity' => 1]],
+        );
+        app(AddPaymentAction::class)->handle($sale, $cashier, PaymentMethod::Cash, 10000, 10000);
+
+        $this->actingAs($cashier)
+            ->get('/cashier/receipts/'.$sale->invoice_number.'/print')
+            ->assertNotFound();
+    }
+
+    public function test_unknown_receipt_public_id_is_not_found(): void
     {
         [$cashier] = $this->prepareCheckoutContext();
 
@@ -199,7 +215,7 @@ class PosCheckoutTest extends TestCase
         ]);
 
         $this->actingAs($owner)
-            ->get(route('cashier.receipt.print', ['sale' => $sale->invoice_number]))
+            ->get(route('cashier.receipt.print', ['sale' => $sale->public_id]))
             ->assertForbidden();
     }
 
@@ -219,7 +235,7 @@ class PosCheckoutTest extends TestCase
         ]);
 
         $this->actingAs($otherCashier)
-            ->get(route('cashier.receipt.print', ['sale' => $sale->invoice_number]))
+            ->get(route('cashier.receipt.print', ['sale' => $sale->public_id]))
             ->assertNotFound();
     }
 
@@ -320,7 +336,7 @@ class PosCheckoutTest extends TestCase
         Livewire::test(Checkout::class)->assertRedirect('/cashier/open-shift');
     }
 
-    /** @return \Livewire\Testing\Testable<Checkout> */
+    /** @return Testable<Checkout> */
     private function checkout(User $cashier): mixed
     {
         $this->actingAs($cashier);
@@ -329,7 +345,7 @@ class PosCheckoutTest extends TestCase
         return Livewire::test(Checkout::class);
     }
 
-    /** @return \Livewire\Testing\Testable<CashierPosCheckout> */
+    /** @return Testable<CashierPosCheckout> */
     private function cashierCheckout(User $cashier): mixed
     {
         $this->actingAs($cashier);

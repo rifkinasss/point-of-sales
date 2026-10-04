@@ -14,9 +14,11 @@ use Illuminate\Validation\ValidationException;
 class Sale extends Model
 {
     use BelongsToCurrentStore;
+    use Concerns\HasPublicId;
 
     protected $fillable = [
         'store_id',
+        'public_id',
         'invoice_number',
         'cashier_shift_id',
         'cashier_id',
@@ -44,6 +46,15 @@ class Sale extends Model
             'subtotal' => 'integer',
             'transaction_discount_total' => 'integer',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::updating(function (self $sale): void {
+            if ($sale->isDirty('invoice_number')) {
+                throw new \LogicException('Invoice number is immutable after sale creation.');
+            }
+        });
     }
 
     public function cashierShift(): BelongsTo

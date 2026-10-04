@@ -34,7 +34,7 @@ Only `AdminPanelProvider` remains registered. Cashier, manager, and owner entry 
 - Cash register: `CashMovement` adalah append-only application ledger untuk opening, cash sale, refund cash, cash in, dan cash out. `CashBalanceCalculator` menjadi sumber expected cash.
 - Payment: `Sale 1:N Payment`. `PaymentAllocator` menghitung completed payment, total paid, remaining due, dan breakdown method. Sale baru menjadi `paid` setelah completed payments tepat memenuhi grand total.
  - Void/refund: `VoidSaleAction` hanya menerima pending sale; `RefundSaleAction` hanya menerima paid sale dan membalik stock movement secara atomic.
- - Invoice: `InvoiceNumberGenerator` menghasilkan identifier publik `POS-YYYYMMDD-ULID`; primary key sale tetap terpisah dan invoice memiliki unique constraint.
+ - Invoice: `InvoiceNumberGenerator` menghasilkan nomor bisnis berbasis `store_code`, optional `branch_code`, tanggal bisnis lokal toko, dan sequence atomic enam digit. `invoice_number` immutable dan unique; `Sale.public_id` tetap menjadi identifier publik non-sequential.
 - Inventory: `app/Actions/Inventory/`.
 - Shift: `app/Actions/Shift/`.
 - Persistence: `app/Models/` dan `database/migrations/`.
@@ -69,7 +69,7 @@ POS browser/Livewire surfaces use non-sequential identifiers:
 
 | Entity | Public identifier | Scope |
 | --- | --- | --- |
-| Sale / receipt | `invoice_number` (`POS-YYYYMMDD-ULID`) | Receipt route and payment query |
+| Sale / receipt | `public_id` ULID | Receipt route and payment query |
 | Product | `public_id` ULID | Product cards and cart state |
 | Category | `public_id` ULID | Category filter state |
 | Customer | `public_id` ULID | Customer selector and cart state |
@@ -77,6 +77,8 @@ POS browser/Livewire surfaces use non-sequential identifiers:
 | Redeem code | immutable promotion code | Promotion input; no internal redeem-code ID in Livewire state |
 
 All public identifier lookups still enforce authentication, cashier ownership, and current-store scope. ULID/unpredictability reduces enumeration risk but is not an authorization mechanism. Filament admin internals may continue to use numeric record IDs where the framework requires them.
+
+Invoice number is a business reference, not a security identifier. Its format is `STORE-YYYYMMDD-SEQUENCE` or `STORE-BRANCH-YYYYMMDD-SEQUENCE`, with a six-digit sequence stored in `invoice_sequences` and locked per store, optional branch code, and local business date. Store timezone determines the business date; stored timestamps remain canonical database timestamps.
 
 ## Payment invariant
 

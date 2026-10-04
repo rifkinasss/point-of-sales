@@ -7,6 +7,7 @@ use App\Enums\ShiftStatus;
 use App\Models\CashierShift;
 use App\Models\Customer;
 use App\Models\Sale;
+use App\Models\Store;
 use App\Models\User;
 use App\Services\InvoiceNumberGenerator;
 use App\Services\SaleCalculator;
@@ -45,10 +46,11 @@ class CreatePendingSaleAction
                 throw ValidationException::withMessages(['promotion' => 'Kode promosi tidak valid.']);
             }
 
-            $calculation = app(SaleCalculator::class)->calculate($items, $transactionDiscount, $redeemCode, $shift->store_id ?: $cashier->store_id, $customer?->tier);
+            $store = Store::query()->findOrFail($shift->store_id ?: $cashier->store_id);
+            $calculation = app(SaleCalculator::class)->calculate($items, $transactionDiscount, $redeemCode, $store->id, $customer?->tier);
             $sale = Sale::query()->create([
-                'store_id' => $shift->store_id ?: $cashier->store_id,
-                'invoice_number' => app(InvoiceNumberGenerator::class)->generate(),
+                'store_id' => $store->id,
+                'invoice_number' => app(InvoiceNumberGenerator::class)->generate($store),
                 'cashier_shift_id' => $shift->id,
                 'cashier_id' => $cashier->id,
                 'customer_id' => $customer?->id,

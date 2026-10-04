@@ -5,12 +5,15 @@ namespace App\Models;
 use EduardoRibeiroDev\FilamentLeaflet\ValueObjects\Coordinate;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class Store extends Model
 {
     protected $fillable = [
         'name',
         'slug',
+        'store_code',
+        'branch_code',
         'plan',
         'product_limit',
         'staff_limit',
@@ -38,6 +41,38 @@ class Store extends Model
             'product_limit' => 'integer',
             'staff_limit' => 'integer',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $store): void {
+            if (filled($store->store_code)) {
+                return;
+            }
+
+            $source = strtoupper((string) ($store->invoice_prefix ?: $store->slug ?: $store->name ?: 'STO'));
+            $code = preg_replace('/[^A-Z0-9]/', '', $source) ?: 'STO';
+            $code = str_pad(substr($code, 0, 3), 3, 'X');
+            $attempt = 0;
+
+            while (static::query()->where('store_code', $code)->exists()) {
+                $attempt++;
+                $code = strtoupper(substr(base_convert((string) crc32($source.$attempt), 10, 36), -3));
+                $code = str_pad($code, 3, '0', STR_PAD_LEFT);
+            }
+
+            $store->store_code = $code;
+        });
+    }
+
+    public function setStoreCodeAttribute(?string $value): void
+    {
+        $this->attributes['store_code'] = filled($value) ? Str::upper(trim($value)) : null;
+    }
+
+    public function setBranchCodeAttribute(?string $value): void
+    {
+        $this->attributes['branch_code'] = filled($value) ? Str::upper(trim($value)) : null;
     }
 
     public function users(): HasMany

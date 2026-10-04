@@ -73,6 +73,17 @@ class StoreSettings extends Page implements HasForms
                             ->label('Nama toko')
                             ->required()
                             ->maxLength(150),
+                        TextInput::make('store_code')
+                            ->label('Kode toko')
+                            ->required()
+                            ->length(3)
+                            ->regex('/^[A-Z0-9]{3}$/')
+                            ->helperText('Tepat 3 karakter uppercase, digunakan pada nomor invoice.'),
+                        TextInput::make('branch_code')
+                            ->label('Kode cabang (opsional)')
+                            ->maxLength(7)
+                            ->regex('/^[A-Z0-9]{1,7}$/')
+                            ->helperText('Maksimal 7 karakter uppercase alfanumerik.'),
                         Textarea::make('address')
                             ->label('Alamat')
                             ->rows(3)
