@@ -40,7 +40,7 @@ Only `AdminPanelProvider` remains registered. Cashier, manager, and owner entry 
 - Persistence: `app/Models/` dan `database/migrations/`.
 - UI back-office: `app/Filament/` and `resources/views/filament/` through the admin panel.
 - Cashier UI: `app/Livewire/Cashier/`, `app/Livewire/Pos/Checkout.php`, and `resources/views/livewire/`.
-- Manager/owner read-only UI: `app/Livewire/Manager/`, `app/Livewire/Owner/`, and `app/Queries/`. Manager monitoring includes `/manager/transactions`, `/manager/shifts`, `/manager/cash`, `/manager/products`, and `/manager/customers`; customer profile edits are limited to contact fields.
+- Manager/owner read-only UI: `app/Livewire/Manager/`, `app/Livewire/Owner/`, and `app/Queries/`. Manager monitoring includes `/manager/transactions`, `/manager/shifts`, `/manager/cash`, `/manager/products`, `/manager/customers`, and `/manager/promotions`; customer profile edits are limited to contact fields, while promotion rules support controlled manager CRUD.
 
 Dokumen ini hanya mencatat struktur yang ditemukan; belum menetapkan arsitektur refactor final.
 
@@ -73,6 +73,7 @@ POS browser/Livewire surfaces use non-sequential identifiers:
 | Product | `public_id` ULID | Product cards and cart state |
 | Category | `public_id` ULID | Category filter state |
 | Customer | `public_id` ULID | Customer selector and cart state |
+| Promotion | `public_id` ULID | Manager promotion routes and browser links |
 | Modifier group/value | `public_id` ULID | Modifier selection state |
 | Cashier shift | `public_id` ULID | Manager shift monitoring route |
 | Product | `public_id` ULID | Manager product routes and browser state |

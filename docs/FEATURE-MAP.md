@@ -46,5 +46,8 @@ Payment tetap `pending` pada level sale sampai `sum(completed payments) == grand
 |---|---|---|
 | Admin | Filament back-office | `/admin` |
 | Cashier | Livewire operational workspace | `/cashier/*` |
-| Manager | Livewire dashboard, transaction, shift, cash, product/stock, and customer monitoring | `/manager`, `/manager/transactions`, `/manager/shifts`, `/manager/cash`, `/manager/products`, `/manager/customers` |
+| Manager | Livewire dashboard, transaction, shift, cash, product/stock, customer monitoring, and promotion rules | `/manager`, `/manager/transactions`, `/manager/shifts`, `/manager/cash`, `/manager/products`, `/manager/customers`, `/manager/promotions` |
+| Promotion price rules | Available | `App\\Models\\Promotion`; Manager can manage scheduled active/inactive percentage, fixed, and fixed-price rules with optional product applicability. |
 | Owner | Livewire executive overview baseline | `/owner` |
+
+Transaction redeem-code campaigns remain a separate promotion domain and are not exposed as store-scoped Manager records until their ownership and usage model are defined.

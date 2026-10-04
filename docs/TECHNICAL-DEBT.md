@@ -15,6 +15,8 @@
 - Manager inventory monitoring and reports remain deferred. Manager transaction monitoring, shift review, and cash reconciliation are now available as read-only Livewire modules.
 - Manager product and stock monitoring is available with store-scoped search/filter/detail views. Controlled stock adjustments are recorded through `AdjustStockAction`; full product CRUD remains Admin/Filament-only.
 - Manager customer monitoring is available with store-scoped search, profile detail, paid-sale metrics, transaction history, and limited contact profile editing. Loyalty, segmentation, and CRM automation remain deferred.
+- Manager promotion workspace is available for store-scoped percentage, fixed, and fixed-price product rules with schedule, activation, and product applicability controls. The `Promotion` model has no code field, category relation, usage ledger, or historical sale-usage relation, so authoritative usage monitoring remains unavailable and is explicitly deferred.
+- Transaction redeem-code campaigns remain a separate package domain without current store ownership. They are intentionally not presented as Manager promotion records until store scoping and usage governance are designed.
 - Cash reconciliation ledger selesai pada Phase 3 melalui `CashMovement`; koreksi histori tetap harus berupa movement baru, bukan edit/delete.
 - Payment sudah mendukung multi-payment per sale.
 - Partial return belum tersedia; status void tersedia untuk pending sale.

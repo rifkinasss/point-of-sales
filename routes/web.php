@@ -19,6 +19,8 @@ use App\Livewire\Manager\Products\Index as ManagerProducts;
 use App\Livewire\Manager\Products\Show as ManagerProductShow;
 use App\Livewire\Manager\Customers\Index as ManagerCustomers;
 use App\Livewire\Manager\Customers\Show as ManagerCustomerShow;
+use App\Livewire\Manager\Promotions\Index as ManagerPromotions;
+use App\Livewire\Manager\Promotions\Show as ManagerPromotionShow;
 use App\Livewire\Owner\Dashboard as OwnerDashboard;
 use Illuminate\Support\Facades\Route;
 
@@ -46,6 +48,8 @@ Route::get('/manager/products', ManagerProducts::class)->middleware('auth')->nam
 Route::get('/manager/products/{product:public_id}', ManagerProductShow::class)->middleware('auth')->name('manager.products.show');
 Route::get('/manager/customers', ManagerCustomers::class)->middleware('auth')->name('manager.customers.index');
 Route::get('/manager/customers/{customer:public_id}', ManagerCustomerShow::class)->middleware('auth')->name('manager.customers.show');
+Route::get('/manager/promotions', ManagerPromotions::class)->middleware('auth')->name('manager.promotions.index');
+Route::get('/manager/promotions/{promotion:public_id}', ManagerPromotionShow::class)->middleware('auth')->name('manager.promotions.show');
 Route::get('/owner', OwnerDashboard::class)->middleware('auth')->name('owner.dashboard');
 Route::get('/auth/register', [RegistrationController::class, 'create'])->middleware('guest')->name('auth.register');
 Route::post('/auth/register', [RegistrationController::class, 'store'])->middleware('guest')->name('auth.register.store');
