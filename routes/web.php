@@ -6,10 +6,10 @@ use App\Http\Controllers\Auth\RegistrationController;
 use App\Livewire\Cashier\CloseShift;
 use App\Livewire\Cashier\OpenShift;
 use App\Livewire\Cashier\Payment;
+use App\Livewire\Cashier\PosCheckout;
 use App\Livewire\Cashier\Receipt;
 use App\Livewire\Manager\Dashboard as ManagerDashboard;
 use App\Livewire\Owner\Dashboard as OwnerDashboard;
-use App\Livewire\Pos\Checkout;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/auth/login');
@@ -18,8 +18,9 @@ Route::get('/auth/login', [LoginController::class, 'create'])->name('auth.login'
 Route::post('/auth/login', [LoginController::class, 'store'])->name('auth.login.store');
 Route::post('/auth/logout', [LoginController::class, 'destroy'])->middleware('auth')->name('auth.logout');
 Route::get('/cashier/open-shift', OpenShift::class)->middleware('auth')->name('cashier.open-shift');
-Route::get('/cashier', Checkout::class)->middleware('auth')->name('cashier.workspace');
-Route::get('/cashier/pos-checkout', Checkout::class)->middleware('auth')->name('cashier.pos');
+Route::redirect('/cashier', '/cashier/pos')->middleware('auth')->name('cashier.workspace');
+Route::get('/cashier/pos', PosCheckout::class)->middleware('auth')->name('cashier.pos');
+Route::get('/cashier/pos-checkout', PosCheckout::class)->middleware('auth')->name('cashier.pos.legacy');
 Route::get('/cashier/payment-page', Payment::class)->middleware('auth')->name('cashier.payment');
 Route::get('/cashier/receipt-page', Receipt::class)->middleware('auth')->name('cashier.receipt');
 Route::get('/cashier/close-shift', CloseShift::class)->middleware('auth')->name('cashier.close-shift');

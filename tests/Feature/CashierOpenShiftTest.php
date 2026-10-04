@@ -38,7 +38,7 @@ class CashierOpenShiftTest extends TestCase
             ->set('openingCash', 100000)
             ->set('openingNote', 'Serah terima pagi')
             ->call('openShift')
-            ->assertRedirect('/cashier/pos-checkout');
+            ->assertRedirect('/cashier/pos');
 
         $shift = CashierShift::query()->where('user_id', $cashier->id)->firstOrFail();
 
@@ -60,7 +60,7 @@ class CashierOpenShiftTest extends TestCase
             ->set('openingCash', 9000000)
             ->assertSet('openingCash', 9000000)
             ->call('openShift')
-            ->assertRedirect('/cashier/pos-checkout');
+            ->assertRedirect('/cashier/pos');
 
         $this->assertDatabaseHas('cashier_shifts', [
             'user_id' => $cashier->id,
@@ -81,7 +81,7 @@ class CashierOpenShiftTest extends TestCase
             ->test(OpenShift::class)
             ->set('openingCash', 0)
             ->call('openShift')
-            ->assertRedirect('/cashier/pos-checkout');
+            ->assertRedirect('/cashier/pos');
 
         $this->assertDatabaseHas('cashier_shifts', [
             'user_id' => $cashier->id,
@@ -97,7 +97,7 @@ class CashierOpenShiftTest extends TestCase
         Livewire::actingAs($cashier)
             ->test(OpenShift::class)
             ->call('openShift')
-            ->assertRedirect('/cashier/pos-checkout');
+            ->assertRedirect('/cashier/pos');
 
         $this->assertDatabaseHas('cashier_shifts', [
             'user_id' => $cashier->id,
@@ -118,7 +118,7 @@ class CashierOpenShiftTest extends TestCase
 
         Livewire::actingAs($cashier)
             ->test(OpenShift::class)
-            ->assertRedirect('/cashier/pos-checkout');
+            ->assertRedirect('/cashier/pos');
     }
 
     public function test_non_cashier_cannot_open_shift(): void

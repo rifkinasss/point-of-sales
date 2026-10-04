@@ -69,7 +69,7 @@ class CentralLoginTest extends TestCase
         $this->post('/auth/login', [
             'email' => $cashier->email,
             'password' => 'password',
-        ])->assertRedirect('/cashier/pos-checkout');
+        ])->assertRedirect('/cashier/pos');
     }
 
     public function test_cashier_cannot_log_out_while_a_shift_is_open(): void

@@ -83,7 +83,7 @@ class LoginController extends Controller
             UserRole::Cashier => CashierShift::query()
                 ->where('user_id', auth()->id())
                 ->where('status', ShiftStatus::Open)
-                ->exists() ? '/cashier/pos-checkout' : '/cashier/open-shift',
+                ->exists() ? '/cashier/pos' : '/cashier/open-shift',
         };
     }
 }

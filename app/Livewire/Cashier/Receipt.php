@@ -22,7 +22,7 @@ class Receipt extends Component
         $this->sale = Sale::query()->with(['items', 'payments', 'cashier', 'customer', 'store'])->whereKey((int) request()->integer('sale'))->where('cashier_id', $this->currentUser()->id)->where('store_id', $this->currentUser()->store_id)->where('status', SaleStatus::Paid)->first();
 
         if (! $this->sale) {
-            $this->redirect('/cashier/pos-checkout');
+            $this->redirect('/cashier/pos');
 
             return;
         }

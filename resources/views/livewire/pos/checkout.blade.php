@@ -1,12 +1,12 @@
-<div class="pos-screen pos-checkout-workspace" x-data x-on:keydown.window="const isEditing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(event.target.tagName) || event.target.isContentEditable; if (! isEditing && event.key === 'F2') { event.preventDefault(); $refs.productSearch.focus() } if (! isEditing && event.key === 'F8' && ! $refs.payButton.disabled) { event.preventDefault(); $refs.payButton.click() }">
-        <header class="pos-workstation-header">
+<div class="cashier-pos-workspace pos-screen pos-checkout-workspace nl-page" x-data x-on:keydown.window="const isEditing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(event.target.tagName) || event.target.isContentEditable; if (! isEditing && event.key === 'F2') { event.preventDefault(); $refs.productSearch.focus() } if (! isEditing && event.key === 'F8' && ! $refs.payButton.disabled) { event.preventDefault(); $refs.payButton.click() }">
+        <header class="pos-workstation-header mx-auto w-full max-w-[1440px]">
             <div class="flex min-w-0 items-center gap-3">
-                <span class="grid size-11 shrink-0 place-items-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-500/25"><x-filament::icon icon="heroicon-o-shopping-bag" class="size-6" /></span>
-                <div class="min-w-0"><p class="text-xs font-bold uppercase tracking-[0.16em] text-indigo-600">{{ auth()->user()?->store?->name ?? 'Store aktif' }} · POS</p><h1 class="truncate text-xl font-black tracking-tight text-gray-950 dark:text-white">Kasir <span class="font-medium text-gray-400">— {{ auth()->user()?->name }}</span></h1><p class="mt-1 text-xs text-gray-500">Shift aktif sejak {{ $this->activeShift?->opened_at?->format('H:i') ?? '—' }}</p></div>
+                <span class="grid size-9 shrink-0 place-items-center rounded-lg bg-primary text-sm font-black text-white">N</span>
+                <div class="min-w-0"><p class="text-xs font-bold uppercase tracking-[0.12em] text-primary">NasLabs POS</p><h1 class="truncate text-lg font-black tracking-tight text-foreground dark:text-white">{{ auth()->user()?->store?->name ?? 'Store aktif' }} <span class="font-medium text-muted">· {{ auth()->user()?->name }}</span></h1><p class="mt-0.5 text-xs text-muted">Shift aktif sejak {{ $this->activeShift?->opened_at?->format('H:i') ?? '—' }}</p></div>
             </div>
-            <div class="flex items-center gap-2"><span class="hidden rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 sm:inline-flex dark:bg-emerald-500/15 dark:text-emerald-300"><span class="mr-1.5 size-2 rounded-full bg-emerald-500"></span>Kasir siap</span><a class="inline-flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-bold text-amber-800 transition hover:bg-amber-100 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-200" href="{{ url('/cashier/close-shift') }}"><x-filament::icon icon="heroicon-o-lock-closed" class="size-4" /><span class="hidden sm:inline">Tutup shift</span></a></div>
+            <div class="flex items-center gap-2"><span class="hidden rounded-md bg-emerald-50 px-2.5 py-1.5 text-xs font-bold text-emerald-700 sm:inline-flex dark:bg-emerald-500/15 dark:text-emerald-300">Shift aktif</span><a class="nl-focus inline-flex items-center rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800 transition hover:bg-amber-100 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-200" href="{{ url('/cashier/close-shift') }}">Tutup shift</a><form method="POST" action="{{ route('auth.logout') }}">@csrf<button class="nl-focus rounded-md border border-border bg-surface px-3 py-2 text-xs font-bold text-secondary hover:border-primary hover:text-primary dark:border-white/15 dark:bg-white/5 dark:text-slate-200" type="submit">Keluar</button></form></div>
         </header>
-        <div class="pos-checkout-columns grid gap-6 xl:grid-cols-[minmax(0,1fr)_29rem]">
+        <div class="pos-checkout-columns mx-auto grid w-full max-w-[1440px] gap-6 xl:grid-cols-[minmax(0,1fr)_29rem] xl:gap-8">
         <section class="pos-catalog min-w-0">
             <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
                 <div>
@@ -16,16 +16,7 @@
                 <p class="rounded-full bg-gray-100 px-3 py-1.5 text-xs font-bold text-gray-500 dark:bg-white/10 dark:text-gray-300">{{ $this->products->count() }} produk tersedia</p>
             </div>
 
-            <x-filament::input.wrapper class="pos-product-search">
-                <x-filament::input
-                    x-ref="productSearch"
-                    id="pos-product-search"
-                    wire:model.live.debounce.300ms="search"
-                    wire:keydown.enter.prevent="scanProduct"
-                    placeholder="Cari atau scan barcode produk"
-                    type="search"
-                />
-            </x-filament::input.wrapper>
+            <div class="pos-product-search rounded-lg border border-border bg-surface focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/10 dark:border-white/15 dark:bg-white/5"><input class="min-h-12 w-full rounded-lg border-0 bg-transparent px-4 text-sm text-foreground outline-none placeholder:text-muted focus:ring-0 dark:text-white" x-ref="productSearch" id="pos-product-search" wire:model.live.debounce.300ms="search" wire:keydown.enter.prevent="scanProduct" placeholder="Cari nama, SKU, atau scan barcode" type="search"></div>
             <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500"><span>Enter untuk barcode</span><span><kbd>F2</kbd> cari produk</span><span><kbd>F8</kbd> bayar</span></div>
             <div wire:loading.flex wire:target="search" class="mt-2 items-center gap-2 text-xs font-semibold text-indigo-600"><span class="size-2 animate-pulse rounded-full bg-indigo-600"></span>Mencari produk…</div>
 

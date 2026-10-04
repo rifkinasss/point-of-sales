@@ -628,6 +628,7 @@ class Checkout extends Component
     {
         return CashierShift::query()
             ->where('user_id', $this->currentUser()->id)
+            ->where('store_id', $this->currentUser()->store_id)
             ->where('status', ShiftStatus::Open)
             ->latest('opened_at')
             ->first();

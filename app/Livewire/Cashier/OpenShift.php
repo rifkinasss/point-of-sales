@@ -28,7 +28,7 @@ class OpenShift extends Component
         }
 
         if ($this->activeShift($cashier)) {
-            $this->redirect('/cashier/pos-checkout');
+            $this->redirect('/cashier/pos');
 
             return;
         }
@@ -76,7 +76,7 @@ class OpenShift extends Component
             return;
         }
 
-        $this->redirect('/cashier/pos-checkout');
+        $this->redirect('/cashier/pos');
     }
 
     public function render()

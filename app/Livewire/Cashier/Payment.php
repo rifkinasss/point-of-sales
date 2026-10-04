@@ -41,7 +41,7 @@ class Payment extends Component
             ->first();
 
         if (! $this->sale) {
-            $this->redirect('/cashier/pos-checkout');
+            $this->redirect('/cashier/pos');
 
             return;
         }

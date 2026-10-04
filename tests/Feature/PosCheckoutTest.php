@@ -6,6 +6,7 @@ use App\Actions\Inventory\RecordInitialStockAction;
 use App\Actions\Shift\OpenShiftAction;
 use App\Enums\ProductType;
 use App\Enums\UserRole;
+use App\Livewire\Cashier\PosCheckout as CashierPosCheckout;
 use App\Livewire\Pos\Checkout;
 use App\Models\Category;
 use App\Models\Product;
@@ -20,6 +21,31 @@ use Tests\TestCase;
 class PosCheckoutTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_canonical_cashier_pos_route_renders_the_livewire_workspace(): void
+    {
+        [$cashier] = $this->prepareCheckoutContext();
+
+        $this->actingAs($cashier)
+            ->get('/cashier/pos')
+            ->assertOk()
+            ->assertSee('NasLabs POS')
+            ->assertSee('Pilih produk');
+
+        Livewire::actingAs($cashier)
+            ->test(CashierPosCheckout::class)
+            ->assertStatus(200);
+    }
+
+    public function test_canonical_cashier_pos_route_redirects_without_active_shift(): void
+    {
+        $store = Store::query()->create(['name' => 'Toko Tanpa Shift', 'slug' => 'toko-tanpa-shift']);
+        $cashier = User::factory()->create(['store_id' => $store->id, 'role' => UserRole::Cashier]);
+
+        $this->actingAs($cashier)
+            ->get('/cashier/pos')
+            ->assertRedirect('/cashier/open-shift');
+    }
 
     public function test_pos_workspace_renders_product_search_and_category_filter(): void
     {

@@ -1,7 +1,7 @@
 <div class="min-h-screen bg-slate-100 px-4 py-5 dark:bg-slate-950">
     @php($user = auth()->user())
     <header class="mx-auto flex max-w-6xl items-center justify-between border-b border-slate-200 pb-4 dark:border-white/10">
-        <div><a class="font-black text-slate-950 dark:text-white" href="/cashier/pos-checkout">NasLabs POS</a><p class="text-xs text-slate-500">{{ $user?->store?->name }} · {{ $user?->name }}</p></div>
+        <div><a class="font-black text-slate-950 dark:text-white" href="/cashier/pos">NasLabs POS</a><p class="text-xs text-slate-500">{{ $user?->store?->name }} · {{ $user?->name }}</p></div>
         <form method="POST" action="{{ route('auth.logout') }}">@csrf<button class="min-h-11 rounded-xl border border-slate-300 bg-white px-4 text-sm font-bold dark:border-white/15 dark:bg-white/5 dark:text-white" type="submit">Keluar</button></form>
     </header>
     <main class="mx-auto max-w-6xl py-8">
