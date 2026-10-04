@@ -30,6 +30,7 @@
 
 .cashier-pos-workspace { min-height: 100dvh; padding: 0.75rem clamp(1rem, 2vw, 2rem) 1.25rem; }
 .cashier-pos-workspace .pos-workstation-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; min-height: 3.75rem; border-bottom: 1px solid var(--nl-border); }
+.cashier-pos-workspace .pos-workstation-actions { flex-wrap: wrap; justify-content: flex-end; }
 .cashier-pos-workspace .pos-checkout-columns { min-height: 0; }
 .cashier-pos-workspace .pos-catalog { min-width: 0; }
 .cashier-pos-workspace .pos-cart-panel { min-width: 0; border: 1px solid var(--nl-border); border-radius: 0.5rem; background: var(--nl-surface); padding: 1rem; }
@@ -41,6 +42,11 @@
     .cashier-pos-workspace .pos-catalog { display: flex; flex-direction: column; max-height: 100%; }
     .cashier-pos-workspace .pos-product-grid { min-height: 0; overflow-y: auto; padding-inline-end: 0.25rem; }
     .cashier-pos-workspace .pos-cart-panel { position: sticky; top: 0.75rem; max-height: calc(100dvh - 5.75rem); overflow-y: auto; }
+}
+
+@media (max-width: 767px) {
+    .cashier-pos-workspace .pos-workstation-header { align-items: stretch; flex-direction: column; }
+    .cashier-pos-workspace .pos-workstation-actions { justify-content: flex-start; }
 }
 
 /* Existing Livewire utility names now resolve to the NasLabs blue token. */
