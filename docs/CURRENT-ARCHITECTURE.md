@@ -1,6 +1,6 @@
 # Current Architecture
 
-Status: baseline setelah Phase 0 cleanup.
+Status: presentation boundary after cashier and management workspace migration.
 
 ## Runtime layout
 
@@ -16,14 +16,14 @@ Eloquent models + store scope
 SQLite / database driver sesuai environment
 ```
 
-## Panels
+## Runtime entry points
 
-- `/admin`: administrator platform.
-- `/owner`: owner toko.
-- `/manager`: manager toko.
-- `/cashier`: workflow shift dan checkout kasir.
+- `/admin`: Filament administrator back-office.
+- `/owner`: Livewire owner overview.
+- `/manager`: Livewire manager operational overview.
+- `/cashier/*`: Livewire cashier workflow.
 
-Panel discovery berada di `app/Providers/Filament/*PanelProvider.php`. Checkout produksi menggunakan `app/Filament/Cashier/Pages/PosCheckout.php` dan action sale; page demo sudah dihapus pada Phase 0.
+Only `AdminPanelProvider` remains registered. Cashier, manager, and owner entry points use Laravel routes and Livewire components.
 
 ## Business boundaries yang terdeteksi
 
@@ -38,8 +38,9 @@ Panel discovery berada di `app/Providers/Filament/*PanelProvider.php`. Checkout 
 - Inventory: `app/Actions/Inventory/`.
 - Shift: `app/Actions/Shift/`.
 - Persistence: `app/Models/` dan `database/migrations/`.
-- UI back-office: `app/Filament/` dan `resources/views/filament/`.
-- UI operasional POS: `app/Livewire/Pos/Checkout.php` dan view `resources/views/livewire/pos/checkout.blade.php`.
+- UI back-office: `app/Filament/` and `resources/views/filament/` through the admin panel.
+- Cashier UI: `app/Livewire/Cashier/`, `app/Livewire/Pos/Checkout.php`, and `resources/views/livewire/`.
+- Manager/owner read-only UI: `app/Livewire/Manager/`, `app/Livewire/Owner/`, and `app/Queries/`.
 
 Dokumen ini hanya mencatat struktur yang ditemukan; belum menetapkan arsitektur refactor final.
 
@@ -51,9 +52,14 @@ Formula authoritative: gross subtotal - item discount total - promotion discount
 
 ## UI boundary
 
-Filament tetap digunakan untuk resource dan workflow back-office. Livewire `App\Livewire\Pos\Checkout` menangani workspace checkout: search, category filter, cart interaction, customer/promotion selection, dan handoff ke pending sale. `SaleCalculator` dan `CreatePendingSaleAction` tetap menjadi authority server-side; komponen Livewire tidak menyimpan payment, inventory, atau status sale secara langsung.
+```text
+Admin   -> Filament
+Cashier -> Livewire
+Manager -> Livewire
+Owner   -> Livewire
+```
 
-`App\Filament\Cashier\Pages\PosCheckout` masih dipertahankan sebagai compatibility shell untuk route/panel Filament yang sudah ada, dan merender Livewire workspace. Shell ini belum dihapus sampai parity dan route migration berikutnya diselesaikan.
+Livewire components call shared Actions, Services, and Queries. Canonical sale, payment, inventory, and cash-ledger rules remain outside the UI layer.
 
 ## Payment invariant
 

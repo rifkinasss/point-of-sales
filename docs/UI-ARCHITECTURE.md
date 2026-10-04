@@ -1,27 +1,27 @@
 # UI Architecture
 
-Status: Phase 5A — Core POS Workspace.
+Status: role-based presentation boundary baseline.
 
 ## Boundary
 
 ```text
-Filament resources/pages
-        ↓ back-office workflows
-Livewire Pos\Checkout
-        ↓ UI state and user intent
-CreatePendingSaleAction / SaleCalculator
-        ↓ authoritative application/domain rules
+Admin Filament / Livewire role workspaces
+        ↓ user intent
+Actions / Services / Queries / Policies
+        ↓ application and read-model boundaries
 Eloquent models and store scope
 ```
 
-Filament tetap dipakai untuk katalog, customer management, settings, reports, dan resource administration. Livewire hanya menangani workspace kasir: product search, category filter, barcode handoff, cart, modifier selection, customer/promotion selection, dan trigger checkout.
+Filament is restricted to admin back-office resources and pages. Livewire owns cashier operations plus manager and owner workspace entry points.
 
 ## POS workspace
 
 - Component and checkout state/actions: `app/Livewire/Pos/Checkout.php`
 - View: `resources/views/livewire/pos/checkout.blade.php`
 - Product card: `resources/views/components/pos/product-card.blade.php`
-- Existing route shell: `app/Filament/Cashier/Pages/PosCheckout.php`
+- Cashier route entry points: `routes/web.php` (`/cashier/open-shift`, `/cashier/pos-checkout`, `/cashier/payment-page`, `/cashier/receipt-page`, `/cashier/close-shift`)
+- Shared cashier layout: `resources/views/components/layouts/cashier.blade.php`
+- Shared manager/owner layout: `resources/views/components/layouts/workspace.blade.php`
 
 Search uses database filtering for name, SKU, and barcode with a bounded result set. Barcode Enter submits directly to the lookup flow. Product cards show price, inventory availability, and modifier affordance without exposing cost or persistence fields.
 
@@ -29,10 +29,10 @@ Search uses database filtering for name, SKU, and barcode with a bounded result 
 
 The Livewire component may hold temporary UI cart state, but it does not become authoritative for price, discount, promotion, inventory, payment, or sale status. Preview totals call `SaleCalculator`; checkout calls `CreatePendingSaleAction`, which recalculates and persists the pending sale in the application layer.
 
-Phase 5A hands off at:
+Cashier flow:
 
 ```text
-POS Checkout → pending Sale → existing PaymentPage
+Open Shift → POS → Payment → Receipt → POS → Close Shift
 ```
 
-Payment redesign, shift redesign, dashboard, refund redesign, and reporting redesign remain outside this phase.
+Manager and owner currently expose read-only overview baselines through `ManagerDashboardQuery` and `OwnerDashboardQuery`. Detailed monitoring/report modules remain deferred until their query and authorization scope is specified.

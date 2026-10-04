@@ -10,10 +10,9 @@
 
 ## Remaining debt
 
-- Repository root bukan Git worktree pada checkout ini, sehingga tidak ada branch, commit, atau diff baseline yang dapat diverifikasi.
 - README sebelumnya menggambarkan layout `backend/`; source aktual berada langsung di root project.
 - Generated Filament panel cache sebelumnya memuat path lama; cache sudah dibersihkan pada Phase 0 melalui `php artisan optimize:clear`.
-- Compatibility shell `PosCheckout` masih terdaftar di Filament; route migration dan penghapusan shell ditunda sampai parity operational POS terverifikasi end-to-end.
+- Manager/owner workspace saat ini baru menyediakan read-only overview baseline; sales monitoring detail, shift review, inventory monitoring, reconciliation, dan reports belum dipisah menjadi modul Livewire penuh.
 - Cash reconciliation ledger selesai pada Phase 3 melalui `CashMovement`; koreksi histori tetap harus berupa movement baru, bukan edit/delete.
 - Payment sudah mendukung multi-payment per sale.
 - Partial return belum tersedia; status void tersedia untuk pending sale.
@@ -29,7 +28,7 @@
 - Authorization refund/void ditegakkan di action dan juga disembunyikan pada Sales table; policy class khusus belum ada.
 - Inventory saat ini single-store per product (`inventories.product_id` unique), bukan ledger balance per store. Cross-store dijaga melalui store pada product/sale/shift/customer.
 - Payment status sudah mendukung `pending`, `completed`, `failed`, dan `refunded`; refund per payment tetap deferred karena refund masih full-sale.
-- Payment workspace dan shift redesign tidak termasuk Phase 5A; UI tersebut tetap berada pada halaman Filament yang ada sampai phase khusus berikutnya.
+- Cashier payment, receipt, and close-shift presentation sudah dipindahkan ke Livewire; browser-level smoke coverage untuk seluruh flow masih perlu ditambahkan.
 - Refund cash pada shift yang sudah ditutup belum memiliki kebijakan operasional khusus; post-close refund governance tetap deferred.
 
 Dokumen ini bukan desain target dan tidak mengubah business logic.

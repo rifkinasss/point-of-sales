@@ -18,6 +18,7 @@ Route::get('/auth/login', [LoginController::class, 'create'])->name('auth.login'
 Route::post('/auth/login', [LoginController::class, 'store'])->name('auth.login.store');
 Route::post('/auth/logout', [LoginController::class, 'destroy'])->middleware('auth')->name('auth.logout');
 Route::get('/cashier/open-shift', OpenShift::class)->middleware('auth')->name('cashier.open-shift');
+Route::get('/cashier', Checkout::class)->middleware('auth')->name('cashier.workspace');
 Route::get('/cashier/pos-checkout', Checkout::class)->middleware('auth')->name('cashier.pos');
 Route::get('/cashier/payment-page', Payment::class)->middleware('auth')->name('cashier.payment');
 Route::get('/cashier/receipt-page', Receipt::class)->middleware('auth')->name('cashier.receipt');

@@ -1,22 +1,22 @@
 # Feature Map
 
-Status capability berdasarkan source saat Phase 0.
+Status capability berdasarkan source aktual setelah presentation migration.
 
 | Feature | Status | Evidence |
 |---|---|---|
 | Authentication | Available | `app/Http/Controllers/Auth/` |
-| Role dan panel access | Available | `app/Enums/UserRole.php`, panel providers |
+| Role dan access | Available | `app/Enums/UserRole.php`, Livewire guards, Admin panel provider |
 | Product, category, unit | Available | Product-related Filament resources dan models |
 | Inventory balance dan stock movement | Available | `Inventory`, `StockMovement`, inventory actions |
-| Cashier shift | Available | `OpenShift`, `CloseShift`, `CashierShift` |
-| Checkout dan payment | Available | `App\Livewire\Pos\Checkout`, compatibility shell `PosCheckout`, `PaymentPage`, sale actions |
+| Cashier shift | Available | `App\Livewire\Cashier\OpenShift`, `CloseShift`, `CashierShift` |
+| Checkout dan payment | Available | `App\Livewire\Pos\Checkout`, `App\Livewire\Cashier\Payment`, sale actions |
 | Refund penuh | Available | `RefundSaleAction`, Sales table action; hanya `paid -> refunded`, role admin/owner/manager |
 | Void transaksi pending | Available | `VoidSaleAction`, Sales table action; hanya `pending_payment -> voided`, role admin/owner/manager |
 | Cash register ledger | Available | `CashMovement`, `CashBalanceCalculator`, opening/payment/refund/cash in/cash out integration |
 | Partial return | Missing | Tidak ditemukan action atau UI partial return |
 | Split payment | Available | Sale 1:N Payment, `AddPaymentAction`, dan PaymentPage mendukung alokasi bertahap |
 | Purchasing dan receiving | Partial | Purchase resources/actions tersedia; workflow item perlu validasi lebih lanjut |
-| Sales report | Partial | Report page tersedia, filter dan role coverage belum lengkap |
+| Sales report | Partial | Admin Filament report tersedia; manager/owner operational report modules belum lengkap |
 | Cash movement ledger | Available | `CashMovement` dan shift reconciliation tersedia |
 | Redeem Code | Keep | Dipakai checkout, payment, provider, dan migrations |
 | Announcements | Needs verification | Provider, trait, config, view, dan migrations aktif |
@@ -37,3 +37,12 @@ Payment tetap `pending` pada level sale sampai `sum(completed payments) == grand
 ## Cash movement types
 
 `opening`, `sale`, `refund`, `cash_in`, dan `cash_out` adalah tipe canonical. Cash movement non-cash payment tidak dibuat.
+
+## Presentation boundary
+
+| Role | UI | Entry point |
+|---|---|---|
+| Admin | Filament back-office | `/admin` |
+| Cashier | Livewire operational workspace | `/cashier/*` |
+| Manager | Livewire overview baseline | `/manager` |
+| Owner | Livewire executive overview baseline | `/owner` |
