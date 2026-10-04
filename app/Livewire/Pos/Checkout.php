@@ -12,7 +12,6 @@ use App\Models\ProductOptionValue;
 use App\Models\Promotion;
 use App\Models\User;
 use App\Services\SaleCalculator;
-use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
 use Furic\FilamentRedeemCodes\Models\RedeemCode;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -616,7 +615,7 @@ class Checkout extends Component
 
     private function currentUser(): User
     {
-        $user = Filament::auth()->user();
+        $user = request()->user();
 
         if (! $user instanceof User) {
             throw new AuthorizationException;
