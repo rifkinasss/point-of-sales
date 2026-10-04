@@ -19,7 +19,8 @@ Filament is restricted to admin back-office resources and pages. Livewire owns c
 - Component and checkout state/actions: `app/Livewire/Pos/Checkout.php`
 - View: `resources/views/livewire/pos/checkout.blade.php`
 - Product card: `resources/views/components/pos/product-card.blade.php`
-- Cashier route entry points: `routes/web.php` (`/cashier/open-shift`, `/cashier/pos-checkout`, `/cashier/payment-page`, `/cashier/receipt-page`, `/cashier/close-shift`)
+- Cashier route entry points: `routes/web.php` (`/cashier/open-shift`, `/cashier/pos`, `/cashier/pos-checkout`, `/cashier/payment-page`, `/cashier/receipt-page`, `/cashier/close-shift`)
+- Payment workspace: `app/Livewire/Cashier/PosCheckout.php` and `resources/views/livewire/cashier/pos-checkout.blade.php`; `/cashier/payment-page?sale=...` is a fallback entry into the same modal component.
 - Shared cashier layout: `resources/views/components/layouts/cashier.blade.php`
 - Shared manager/owner layout: `resources/views/components/layouts/workspace.blade.php`
 
@@ -32,7 +33,7 @@ The Livewire component may hold temporary UI cart state, but it does not become 
 Cashier flow:
 
 ```text
-Open Shift → POS → Payment → Receipt → POS → Close Shift
+Open Shift → POS → Payment modal → Receipt/New transaction → POS → Close Shift
 ```
 
 Manager and owner currently expose read-only overview baselines through `ManagerDashboardQuery` and `OwnerDashboardQuery`. Detailed monitoring/report modules remain deferred until their query and authorization scope is specified.

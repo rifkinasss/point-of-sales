@@ -9,12 +9,12 @@ Status capability berdasarkan source aktual setelah presentation migration.
 | Product, category, unit | Available | Product-related Filament resources dan models |
 | Inventory balance dan stock movement | Available | `Inventory`, `StockMovement`, inventory actions |
 | Cashier shift | Available | `App\Livewire\Cashier\OpenShift`, `CloseShift`, `CashierShift` |
-| Checkout dan payment | Available | `App\Livewire\Pos\Checkout`, `App\Livewire\Cashier\Payment`, sale actions |
+| Checkout dan payment | Available | `App\Livewire\Cashier\PosCheckout`, `App\Livewire\Pos\Checkout`, sale actions |
 | Refund penuh | Available | `RefundSaleAction`, Sales table action; hanya `paid -> refunded`, role admin/owner/manager |
 | Void transaksi pending | Available | `VoidSaleAction`, Sales table action; hanya `pending_payment -> voided`, role admin/owner/manager |
 | Cash register ledger | Available | `CashMovement`, `CashBalanceCalculator`, opening/payment/refund/cash in/cash out integration |
 | Partial return | Missing | Tidak ditemukan action atau UI partial return |
-| Split payment | Available | Sale 1:N Payment, `AddPaymentAction`, dan PaymentPage mendukung alokasi bertahap |
+| Split payment | Available | Sale 1:N Payment, `AddPaymentAction`, dan payment modal pada `Cashier\PosCheckout` mendukung alokasi bertahap |
 | Purchasing dan receiving | Partial | Purchase resources/actions tersedia; workflow item perlu validasi lebih lanjut |
 | Sales report | Partial | Admin Filament report tersedia; manager/owner operational report modules belum lengkap |
 | Cash movement ledger | Available | `CashMovement` dan shift reconciliation tersedia |

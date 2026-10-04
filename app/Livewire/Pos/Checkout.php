@@ -378,13 +378,21 @@ class Checkout extends Component
 
     public function createPendingSale(): void
     {
+        $sale = $this->createPendingSaleRecord();
+
+        $this->cart = [];
+        $this->redirect("/cashier/payment-page?sale={$sale->id}");
+    }
+
+    protected function createPendingSaleRecord(): \App\Models\Sale
+    {
         $shift = $this->currentShift();
 
         if (! $shift) {
             throw ValidationException::withMessages(['shift' => 'Tidak ada shift aktif.']);
         }
 
-        $sale = app(CreatePendingSaleAction::class)->handle(
+        return app(CreatePendingSaleAction::class)->handle(
             $shift,
             $this->currentUser(),
             collect($this->cart)
@@ -401,9 +409,6 @@ class Checkout extends Component
             $this->redeemCodeId ? strtoupper(trim($this->promotionCode)) : null,
             $this->customerId,
         );
-
-        $this->cart = [];
-        $this->redirect("/cashier/payment-page?sale={$sale->id}");
     }
 
     public function getSubtotalProperty(): int

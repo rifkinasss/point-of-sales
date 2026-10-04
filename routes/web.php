@@ -6,7 +6,6 @@ use App\Http\Controllers\Auth\RegistrationController;
 use App\Http\Controllers\BrowserTimezoneController;
 use App\Livewire\Cashier\CloseShift;
 use App\Livewire\Cashier\OpenShift;
-use App\Livewire\Cashier\Payment;
 use App\Livewire\Cashier\PosCheckout;
 use App\Livewire\Cashier\Receipt;
 use App\Livewire\Manager\Dashboard as ManagerDashboard;
@@ -23,7 +22,7 @@ Route::post('/cashier/browser-timezone', BrowserTimezoneController::class)->midd
 Route::redirect('/cashier', '/cashier/pos')->middleware('auth')->name('cashier.workspace');
 Route::get('/cashier/pos', PosCheckout::class)->middleware('auth')->name('cashier.pos');
 Route::get('/cashier/pos-checkout', PosCheckout::class)->middleware('auth')->name('cashier.pos.legacy');
-Route::get('/cashier/payment-page', Payment::class)->middleware('auth')->name('cashier.payment');
+Route::get('/cashier/payment-page', PosCheckout::class)->middleware('auth')->name('cashier.payment');
 Route::get('/cashier/receipt-page', Receipt::class)->middleware('auth')->name('cashier.receipt');
 Route::get('/cashier/close-shift', CloseShift::class)->middleware('auth')->name('cashier.close-shift');
 Route::get('/manager', ManagerDashboard::class)->middleware('auth')->name('manager.dashboard');

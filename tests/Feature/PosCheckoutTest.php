@@ -3,8 +3,11 @@
 namespace Tests\Feature;
 
 use App\Actions\Inventory\RecordInitialStockAction;
+use App\Actions\Sale\CreatePendingSaleAction;
 use App\Actions\Shift\OpenShiftAction;
+use App\Enums\PaymentMethod;
 use App\Enums\ProductType;
+use App\Enums\SaleStatus;
 use App\Enums\UserRole;
 use App\Livewire\Cashier\PosCheckout as CashierPosCheckout;
 use App\Livewire\Pos\Checkout;
@@ -61,6 +64,57 @@ class PosCheckoutTest extends TestCase
             ->get('/cashier/pos-checkout')
             ->assertOk()
             ->assertSee('NasLabs POS');
+    }
+
+    public function test_payment_page_fallback_renders_the_same_cashier_payment_workspace(): void
+    {
+        [$cashier, $product] = $this->prepareCheckoutContext();
+        $this->assertSame(UserRole::Cashier, $cashier->fresh()->role);
+        $this->assertTrue($cashier->fresh()->is_active);
+        $sale = app(CreatePendingSaleAction::class)->handle(
+            $cashier->cashierShifts()->where('status', 'open')->firstOrFail(),
+            $cashier,
+            [['product_id' => $product->id, 'quantity' => 1]],
+        );
+
+        $this->actingAs($cashier)
+            ->get('/cashier/payment-page?sale='.$sale->id)
+            ->assertOk()
+            ->assertSee('Selesaikan transaksi')
+            ->assertSee('ALOKASI PEMBAYARAN');
+    }
+
+    public function test_cashier_payment_modal_uses_the_pending_sale_and_supports_split_payment(): void
+    {
+        [$cashier, $product] = $this->prepareCheckoutContext();
+        $this->assertSame(UserRole::Cashier, $cashier->fresh()->role);
+        $this->assertTrue($cashier->fresh()->is_active);
+        $component = $this->cashierCheckout($cashier)
+            ->call('addProduct', $product->id)
+            ->call('createPendingSale')
+            ->assertSet('paymentModalOpen', true);
+
+        $sale = $component->get('paymentSale');
+
+        $component
+            ->set('paymentMethod', PaymentMethod::Cash->value)
+            ->set('paymentAmount', 4000)
+            ->set('cashReceived', 4000)
+            ->call('addPayment')
+            ->assertSet('paymentSuccess', false)
+            ->assertSet('paymentSale.status', SaleStatus::PendingPayment);
+
+        $component
+            ->set('paymentMethod', PaymentMethod::Qris->value)
+            ->set('paymentAmount', 6000)
+            ->set('cashReceived', 6000)
+            ->call('addPayment')
+            ->assertSet('paymentSuccess', true)
+            ->assertSet('paymentSale.status', SaleStatus::Paid);
+
+        $this->assertSame(2, $sale->payments()->count());
+        $this->assertSame(SaleStatus::Paid, $sale->refresh()->status);
+        $this->assertSame(9, $product->refresh()->inventory()->value('quantity'));
     }
 
     public function test_pos_workspace_renders_product_search_and_category_filter(): void
@@ -133,6 +187,15 @@ class PosCheckoutTest extends TestCase
         Filament::setCurrentPanel('cashier');
 
         return Livewire::test(Checkout::class);
+    }
+
+    /** @return \Livewire\Testing\Testable<CashierPosCheckout> */
+    private function cashierCheckout(User $cashier): mixed
+    {
+        $this->actingAs($cashier);
+        Filament::setCurrentPanel('cashier');
+
+        return Livewire::test(CashierPosCheckout::class);
     }
 
     /** @return array{User, Product, Category} */
