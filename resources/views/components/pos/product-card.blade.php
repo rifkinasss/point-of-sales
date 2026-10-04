@@ -27,7 +27,7 @@
     <div class="flex flex-1 flex-col p-3">
         <span class="block line-clamp-2 text-sm font-bold leading-5">{{ $product->name }}</span>
         @if ($product->relationLoaded('optionGroups') && $product->optionGroups->isNotEmpty())
-            <span class="mt-1 block text-xs text-primary">Tersedia opsi & add-on</span>
+            <span class="mt-1 inline-flex items-center gap-1 text-xs text-primary"><x-filament::icon icon="heroicon-o-adjustments-horizontal" class="size-3.5" aria-hidden="true" /> Tersedia opsi & add-on</span>
         @endif
 
         <div class="mt-auto flex items-end justify-between gap-2 pt-3">
