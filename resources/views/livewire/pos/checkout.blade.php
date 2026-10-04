@@ -70,38 +70,36 @@
 
             <div class="pos-cart-items max-h-[38vh] space-y-3 overflow-y-auto pe-1 lg:max-h-[calc(100dvh-22rem)]">
                 @forelse ($cart as $index => $item)
-                    <div class="border-b border-gray-200 pb-3 dark:border-white/10">
-                        <div class="flex justify-between gap-3">
-                            <div>
-                                <div class="font-medium">{{ $item['name'] }}</div>
-                                <div class="text-xs text-gray-500">Rp {{ number_format($item['price'] + $item['modifier_total'], 0, ',', '.') }}</div>
-                                @foreach ($item['modifiers'] as $modifier)
-                                    <div class="mt-1 text-xs text-primary">{{ $modifier['group'] }}: {{ $modifier['name'] }}{{ $modifier['price_adjustment'] ? ' (+Rp '.number_format($modifier['price_adjustment'], 0, ',', '.').')' : '' }}</div>
-                                @endforeach
-                            </div>
-                            <div class="flex items-center gap-3"><button class="nl-focus inline-flex min-h-11 items-center gap-2 rounded-md px-2 text-sm text-primary hover:bg-primary-soft" type="button" wire:click="editItemOptions({{ $index }})"><x-filament::icon icon="heroicon-o-adjustments-horizontal" class="size-4 shrink-0" aria-hidden="true" /> Ubah opsi</button><button class="nl-focus inline-flex min-h-11 items-center gap-2 rounded-md px-2 text-sm text-danger-600 hover:bg-red-50" type="button" wire:click="removeItem({{ $index }})"><x-filament::icon icon="heroicon-o-trash" class="size-4 shrink-0" aria-hidden="true" /> Hapus</button></div>
+                    <div class="rounded-lg border border-border p-3 dark:border-white/10">
+                        <div class="min-w-0">
+                            <div class="font-semibold text-foreground dark:text-white">{{ $item['name'] }}</div>
+                            <div class="text-xs text-muted">Rp {{ number_format($item['price'] + $item['modifier_total'], 0, ',', '.') }} / unit</div>
+                            @foreach ($item['modifiers'] as $modifier)
+                                <div class="mt-1 text-xs text-primary">{{ $modifier['group'] }}: {{ $modifier['name'] }}{{ $modifier['price_adjustment'] ? ' (+Rp '.number_format($modifier['price_adjustment'], 0, ',', '.').')' : '' }}</div>
+                            @endforeach
                         </div>
-                        <div class="mt-2 flex items-center justify-between">
+                        <div class="mt-3 flex items-center justify-between gap-3">
                             <div class="flex items-center gap-2">
                                 <x-filament::button class="!min-h-9 !min-w-9 !p-0" color="gray" size="sm" type="button" wire:click="decreaseQuantity({{ $index }})" wire:loading.attr="disabled" wire:target="decreaseQuantity" aria-label="Kurangi jumlah"><x-filament::icon icon="heroicon-o-minus" class="size-4" aria-hidden="true" /></x-filament::button>
                                 <span class="min-w-6 text-center">{{ $item['quantity'] }}</span>
                                 <x-filament::button class="!min-h-9 !min-w-9 !p-0" color="gray" size="sm" type="button" wire:click="increaseQuantity({{ $index }})" wire:loading.attr="disabled" wire:target="increaseQuantity" aria-label="Tambah jumlah"><x-filament::icon icon="heroicon-o-plus" class="size-4" aria-hidden="true" /></x-filament::button>
                             </div>
-                            <span class="font-medium">Rp {{ number_format((int) ($this->saleCalculation?->items[$index]['line_total'] ?? 0), 0, ',', '.') }}</span>
+                            <span class="font-semibold text-foreground dark:text-white">Rp {{ number_format((int) ($this->saleCalculation?->items[$index]['line_total'] ?? 0), 0, ',', '.') }}</span>
                         </div>
-                        <div class="mt-2">
-                            <label class="text-xs text-gray-500" for="item-discount-{{ $index }}">Diskon item</label>
-                            <x-filament::input.wrapper prefix="Rp" class="mt-1">
+                        <div class="mt-2 flex items-center justify-between gap-3">
+                            <div class="flex items-center gap-2"><x-filament::icon icon="heroicon-o-adjustments-horizontal" class="size-4 text-primary" aria-hidden="true" /><label class="text-xs font-semibold text-secondary" for="item-discount-{{ $index }}">Diskon item</label></div>
+                            <x-filament::input.wrapper prefix="Rp" class="w-32">
                                 <x-filament::input id="item-discount-{{ $index }}" min="0" type="number" wire:model.live="cart.{{ $index }}.discount" />
                             </x-filament::input.wrapper>
                         </div>
+                        <div class="mt-2 flex items-center gap-2 border-t border-border pt-2 dark:border-white/10"><button class="nl-focus inline-flex min-h-9 items-center gap-2 rounded-lg bg-primary-soft px-2.5 text-xs font-semibold text-primary hover:bg-primary-soft-strong" type="button" wire:click="editItemOptions({{ $index }})"><x-filament::icon icon="heroicon-o-adjustments-horizontal" class="size-4 shrink-0" aria-hidden="true" /> Ubah opsi</button><button class="nl-focus inline-flex min-h-9 items-center gap-2 rounded-lg px-2.5 text-xs font-semibold text-muted hover:bg-red-50 hover:text-danger-600" type="button" wire:click="removeItem({{ $index }})"><x-filament::icon icon="heroicon-o-trash" class="size-4 shrink-0" aria-hidden="true" /> Hapus</button></div>
                     </div>
                 @empty
                     <div class="pos-empty-cart py-7 text-center"><span class="mx-auto grid size-10 place-items-center rounded-lg bg-primary-soft text-primary"><x-filament::icon icon="heroicon-o-shopping-cart" class="size-5" aria-hidden="true" /></span><p class="mt-3 text-sm font-bold text-secondary">Pesanan masih kosong</p><p class="mt-1 text-xs text-muted">Pilih produk untuk memulai pesanan.</p></div>
                 @endforelse
             </div>
 
-            <div class="mt-4 space-y-3 border-t border-border pt-4 text-sm dark:border-white/10">
+            <div class="mt-4 space-y-2 border-t border-border pt-4 text-sm dark:border-white/10">
                 <div class="flex justify-between"><span>Subtotal</span><span>Rp {{ number_format($this->subtotal, 0, ',', '.') }}</span></div>
                 <div class="flex justify-between"><span>Diskon item</span><span>− Rp {{ number_format($this->itemDiscountTotal, 0, ',', '.') }}</span></div>
                 <div>
@@ -135,16 +133,16 @@
                 </div>
             </div>
 
-            <div class="mt-4 flex items-center justify-between border-t border-border pt-4 text-lg font-black dark:border-white/10">
+            <div class="mt-4 flex items-center justify-between border-t border-border pt-4 text-base font-bold dark:border-white/10">
                 <span>Total</span>
-                <span>Rp {{ number_format($this->grandTotal, 0, ',', '.') }}</span>
+                <span class="text-lg">Rp {{ number_format($this->grandTotal, 0, ',', '.') }}</span>
             </div>
 
             @if (count($cart) > 0)
-                <button class="nl-focus mt-3 inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-md text-center text-xs font-bold text-muted hover:bg-red-50 hover:text-danger-600" type="button" wire:click="clearCart" wire:confirm="Kosongkan semua item dari keranjang?"><x-filament::icon icon="heroicon-o-trash" class="size-4" aria-hidden="true" /> Kosongkan pesanan</button>
+                <button class="nl-focus mt-4 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg text-center text-xs font-semibold text-secondary hover:bg-red-50 hover:text-danger-600" type="button" wire:click="clearCart" wire:confirm="Kosongkan semua item dari keranjang?"><x-filament::icon icon="heroicon-o-trash" class="size-4 shrink-0" aria-hidden="true" /> Kosongkan pesanan</button>
             @endif
 
-            <x-filament::button x-ref="payButton" class="pos-pay-button mt-4 min-h-12 w-full bg-primary text-white hover:bg-primary-hover disabled:bg-slate-200 disabled:text-muted dark:disabled:bg-white/10" size="lg" wire:click="createPendingSale" wire:loading.attr="disabled" wire:target="createPendingSale" :disabled="count($cart) === 0 || $this->saleCalculation === null">
+            <x-filament::button x-ref="payButton" class="pos-pay-button mt-3 min-h-[52px] w-full rounded-lg bg-primary px-4 text-white hover:bg-primary-hover disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 dark:disabled:bg-white/10" size="lg" wire:click="createPendingSale" wire:loading.attr="disabled" wire:target="createPendingSale" :disabled="count($cart) === 0 || $this->saleCalculation === null">
                 <span class="inline-flex items-center justify-center gap-2"><x-filament::icon icon="heroicon-o-credit-card" class="size-[18px] shrink-0" aria-hidden="true" /> Bayar · Rp {{ number_format($this->grandTotal, 0, ',', '.') }}</span>
             </x-filament::button>
             <div wire:loading.flex wire:target="createPendingSale,addProduct,scanProduct" class="mt-3 items-center justify-center gap-2 text-xs font-semibold text-primary"><span class="size-2 animate-pulse rounded-full bg-primary"></span>Memproses transaksi…</div>
