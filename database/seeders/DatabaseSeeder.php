@@ -146,6 +146,10 @@ class DatabaseSeeder extends Seeder
                 }
             }
         });
+
+        $this->call([
+            DevelopmentUserSeeder::class,
+        ]);
     }
 
     private function user(string $name, string $email, UserRole $role, ?int $storeId): User
