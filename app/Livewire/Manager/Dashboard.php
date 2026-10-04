@@ -12,7 +12,7 @@ class Dashboard extends Component
     public function mount(): void
     {
         $user = request()->user();
-        abort_unless($user instanceof User && $user->role === UserRole::Manager && $user->is_active, 403);
+        abort_unless($user instanceof User && $user->role === UserRole::Manager && $user->is_active && filled($user->store_id), 403);
     }
 
     public function render()
@@ -21,8 +21,7 @@ class Dashboard extends Component
         $query = app(ManagerDashboardQuery::class);
 
         return view('livewire.manager.dashboard', [
-            'summary' => $query->summary($user),
-            'recentSales' => $query->recentSales($user),
-        ])->layout('components.layouts.workspace', ['title' => 'Manager Dashboard', 'role' => 'Manager', 'nav' => [['label' => 'Dashboard', 'href' => route('manager.dashboard')]]]);
+            'dashboard' => $query->dashboard($user),
+        ])->layout('components.layouts.manager', ['title' => 'Dashboard Operasional']);
     }
 }

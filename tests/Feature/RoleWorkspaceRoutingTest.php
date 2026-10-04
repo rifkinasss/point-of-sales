@@ -16,7 +16,7 @@ class RoleWorkspaceRoutingTest extends TestCase
     {
         $manager = $this->user(UserRole::Manager);
 
-        $this->actingAs($manager)->get('/manager')->assertOk()->assertSee('Manager Dashboard');
+        $this->actingAs($manager)->get('/manager')->assertOk()->assertSee('Dashboard Operasional');
     }
 
     public function test_owner_can_render_livewire_workspace(): void
