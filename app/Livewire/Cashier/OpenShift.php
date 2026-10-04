@@ -15,6 +15,8 @@ class OpenShift extends Component
 {
     public string $openingCash = '';
 
+    public string $openingCashDisplay = '';
+
     public string $openingNote = '';
 
     public bool $shiftClosed = false;
@@ -52,6 +54,7 @@ class OpenShift extends Component
         }
 
         $this->openingCash = (string) $openingCash;
+        $this->openingCashDisplay = $this->formatOpeningCash($openingCash);
 
         $this->validate([
             'openingCash' => ['required', 'integer', 'min:0'],
@@ -117,7 +120,7 @@ class OpenShift extends Component
 
     private function normalizedOpeningCash(): ?int
     {
-        $raw = trim($this->openingCash);
+        $raw = trim($this->openingCash !== '' ? $this->openingCash : $this->openingCashDisplay);
 
         if ($raw === '' || ! preg_match('/^(?:rp\s*)?[0-9][0-9.,\s]*$/i', $raw)) {
             $this->addError('openingCash', 'Kas awal harus berupa angka Rupiah yang valid.');
@@ -134,5 +137,10 @@ class OpenShift extends Component
         }
 
         return (int) $digits;
+    }
+
+    private function formatOpeningCash(int $amount): string
+    {
+        return number_format($amount, 0, ',', '.');
     }
 }

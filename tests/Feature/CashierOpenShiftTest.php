@@ -51,6 +51,43 @@ class CashierOpenShiftTest extends TestCase
         ]);
     }
 
+    public function test_rupiah_prefixed_opening_cash_is_normalized_to_integer(): void
+    {
+        $cashier = $this->cashier();
+
+        Livewire::actingAs($cashier)
+            ->test(OpenShift::class)
+            ->set('openingCashDisplay', 'Rp 300.000')
+            ->call('openShift')
+            ->assertRedirect('/cashier/pos-checkout');
+
+        $this->assertDatabaseHas('cashier_shifts', [
+            'user_id' => $cashier->id,
+            'opening_cash' => 300000,
+        ]);
+
+        $this->assertDatabaseHas('cash_movements', [
+            'user_id' => $cashier->id,
+            'amount' => 300000,
+        ]);
+    }
+
+    public function test_formatted_opening_cash_is_normalized_to_integer(): void
+    {
+        $cashier = $this->cashier();
+
+        Livewire::actingAs($cashier)
+            ->test(OpenShift::class)
+            ->set('openingCash', '300.000')
+            ->call('openShift')
+            ->assertRedirect('/cashier/pos-checkout');
+
+        $this->assertDatabaseHas('cashier_shifts', [
+            'user_id' => $cashier->id,
+            'opening_cash' => 300000,
+        ]);
+    }
+
     public function test_zero_opening_cash_is_accepted(): void
     {
         $cashier = $this->cashier();
