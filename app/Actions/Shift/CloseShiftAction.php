@@ -2,12 +2,10 @@
 
 namespace App\Actions\Shift;
 
-use App\Enums\PaymentMethod;
-use App\Enums\SaleStatus;
 use App\Enums\ShiftStatus;
 use App\Models\CashierShift;
-use App\Models\Payment;
 use App\Models\User;
+use App\Services\CashBalanceCalculator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -30,14 +28,13 @@ class CloseShiftAction
                 ]);
             }
 
-            $cashSales = Payment::query()
-                ->where('method', PaymentMethod::Cash)
-                ->whereHas('sale', fn ($query) => $query
-                    ->where('cashier_shift_id', $shift->id)
-                    ->where('status', SaleStatus::Paid))
-                ->sum('amount_due');
+            if ($shift->user_id !== $closedBy->id || ($shift->store_id && $closedBy->store_id && $shift->store_id !== $closedBy->store_id)) {
+                throw ValidationException::withMessages([
+                    'shift' => 'Shift hanya dapat ditutup oleh pemilik pada toko yang sama.',
+                ]);
+            }
 
-            $expectedCash = $shift->opening_cash + $cashSales;
+            $expectedCash = app(CashBalanceCalculator::class)->summary($shift)['expected'];
             $difference = $closingCashActual - $expectedCash;
 
             if ($difference !== 0 && blank($note)) {

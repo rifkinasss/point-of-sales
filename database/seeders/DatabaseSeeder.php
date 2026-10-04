@@ -3,12 +3,14 @@
 namespace Database\Seeders;
 
 use App\Enums\PaymentMethod;
+use App\Enums\CashMovementType;
 use App\Enums\SaleStatus;
 use App\Enums\ShiftStatus;
 use App\Enums\StockMovementType;
 use App\Enums\UserRole;
 use App\Models\CashierShift;
 use App\Models\Category;
+use App\Models\CashMovement;
 use App\Models\Customer;
 use App\Models\Inventory;
 use App\Models\Payment;
@@ -107,6 +109,17 @@ class DatabaseSeeder extends Seeder
             DB::table('purchases')->updateOrInsert(['store_id' => $store->id, 'purchase_number' => 'PO-DEMO-001'], ['supplier_id' => $supplier->id, 'status' => 'received', 'subtotal' => 630000, 'discount_total' => 30000, 'grand_total' => 600000, 'received_at' => now()->subDays(7), 'received_by' => $manager->id, 'note' => 'Pembelian stok demo', 'updated_at' => now(), 'created_at' => now()]);
 
             $shift = CashierShift::withoutGlobalScopes()->updateOrCreate(['user_id' => $cashier->id, 'opened_at' => now()->startOfDay()], ['store_id' => $store->id, 'status' => ShiftStatus::Open, 'opening_cash' => 300000, 'opening_note' => 'Shift demo']);
+            CashMovement::withoutGlobalScopes()->firstOrCreate([
+                'shift_id' => $shift->id,
+                'type' => CashMovementType::Opening,
+                'reference_type' => null,
+                'reference_id' => null,
+            ], [
+                'store_id' => $store->id,
+                'user_id' => $cashier->id,
+                'amount' => 300000,
+                'note' => 'Shift demo',
+            ]);
             foreach ([0 => 42000, 1 => 57000, 2 => 68000, 3 => 51000, 4 => 74000, 5 => 63000, 6 => 89000] as $daysAgo => $total) {
                 $date = now()->subDays($daysAgo)->setTime(10, 15);
                 $sale = Sale::withoutGlobalScopes()->updateOrCreate(['invoice_number' => 'NLM-DEMO-'.str_pad((string) (7 - $daysAgo), 3, '0', STR_PAD_LEFT)], [
@@ -117,7 +130,20 @@ class DatabaseSeeder extends Seeder
                 $product = $products[$daysAgo % count($products)];
                 $quantity = max(1, intdiv($total, $product->selling_price));
                 $sale->items()->create(['product_id' => $product->id, 'product_name' => $product->name, 'sku' => $product->sku, 'unit_name' => $unit->name, 'quantity' => $quantity, 'unit_price' => $product->selling_price, 'discount_amount' => 0, 'line_total' => $total]);
-                Payment::query()->updateOrCreate(['sale_id' => $sale->id], ['method' => $daysAgo % 2 ? PaymentMethod::Qris : PaymentMethod::Cash, 'amount_due' => $total, 'amount_received' => $total, 'change_amount' => 0, 'paid_at' => $date, 'received_by' => $cashier->id]);
+                $payment = Payment::query()->updateOrCreate(['sale_id' => $sale->id], ['method' => $daysAgo % 2 ? PaymentMethod::Qris : PaymentMethod::Cash, 'amount_due' => $total, 'amount_received' => $total, 'change_amount' => 0, 'paid_at' => $date, 'received_by' => $cashier->id]);
+                if ($payment->method->isCash()) {
+                    CashMovement::withoutGlobalScopes()->firstOrCreate([
+                        'shift_id' => $shift->id,
+                        'type' => CashMovementType::Sale,
+                        'reference_type' => 'payment',
+                        'reference_id' => $payment->id,
+                    ], [
+                        'store_id' => $store->id,
+                        'user_id' => $cashier->id,
+                        'amount' => $payment->amount_due,
+                        'note' => 'Seed '.$sale->invoice_number,
+                    ]);
+                }
             }
         });
     }

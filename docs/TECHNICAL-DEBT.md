@@ -14,7 +14,7 @@
 - README sebelumnya menggambarkan layout `backend/`; source aktual berada langsung di root project.
 - Generated Filament panel cache sebelumnya memuat path lama; cache sudah dibersihkan pada Phase 0 melalui `php artisan optimize:clear`.
 - Business logic checkout masih besar di `PosCheckout` dan belum dipisahkan seluruhnya dari presentation state.
-- Cash reconciliation belum memiliki cash movement ledger.
+- Cash reconciliation ledger selesai pada Phase 3 melalui `CashMovement`; koreksi histori tetap harus berupa movement baru, bukan edit/delete.
 - Payment masih single-payment per sale.
 - Partial return belum tersedia; status void tersedia untuk pending sale.
 - Partial refund tetap deferred; void sekarang tersedia hanya untuk sale pending.
@@ -28,5 +28,7 @@
 - Payment hanya single-payment per sale; split payment dan distributed idempotency tetap deferred.
 - Authorization refund/void ditegakkan di action dan juga disembunyikan pada Sales table; policy class khusus belum ada.
 - Inventory saat ini single-store per product (`inventories.product_id` unique), bukan ledger balance per store. Cross-store dijaga melalui store pada product/sale/shift/customer.
+- Cash in/out belum memiliki UI khusus; application actions tersedia dan UI minimal dapat ditambahkan tanpa mengubah POS layout.
+- Refund cash pada shift yang sudah ditutup belum memiliki kebijakan operasional khusus; post-close refund governance tetap deferred.
 
 Dokumen ini bukan desain target dan tidak mengubah business logic.

@@ -3,9 +3,11 @@
 namespace App\Actions\Sale;
 
 use App\Enums\ProductType;
+use App\Enums\CashMovementType;
 use App\Enums\SaleStatus;
 use App\Enums\StockMovementType;
 use App\Models\Inventory;
+use App\Models\CashMovement;
 use App\Models\Sale;
 use App\Models\SaleReturn;
 use App\Models\StockMovement;
@@ -28,7 +30,7 @@ class RefundSaleAction
         }
 
         return DB::transaction(function () use ($sale, $user, $reason): SaleReturn {
-            $sale = Sale::query()->with('items.product')->lockForUpdate()->findOrFail($sale->id);
+            $sale = Sale::query()->with('items.product', 'payment', 'cashierShift')->lockForUpdate()->findOrFail($sale->id);
 
             if ($sale->status !== SaleStatus::Paid) {
                 throw ValidationException::withMessages(['sale' => 'Hanya transaksi lunas yang dapat direfund.']);
@@ -98,6 +100,19 @@ class RefundSaleAction
                     'reason' => 'Refund '.$return->return_number,
                     'performed_by' => $user->id,
                     'occurred_at' => now(),
+                ]);
+            }
+
+            if ($sale->payment?->method?->isCash()) {
+                CashMovement::query()->create([
+                    'store_id' => $storeId,
+                    'shift_id' => $sale->cashierShift?->id,
+                    'user_id' => $user->id,
+                    'type' => CashMovementType::Refund,
+                    'amount' => $sale->grand_total,
+                    'reference_type' => 'sale_return',
+                    'reference_id' => $return->id,
+                    'note' => 'Refund '.$return->return_number,
                 ]);
             }
 

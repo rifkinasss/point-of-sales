@@ -54,4 +54,9 @@ class CashierShift extends Model
     {
         return $this->hasMany(Sale::class);
     }
+
+    public function cashMovements(): HasMany
+    {
+        return $this->hasMany(CashMovement::class, 'shift_id');
+    }
 }

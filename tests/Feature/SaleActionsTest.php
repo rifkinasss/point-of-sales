@@ -12,6 +12,7 @@ use App\Actions\Shift\OpenShiftAction;
 use App\Enums\PaymentMethod;
 use App\Enums\SaleStatus;
 use App\Enums\StockMovementType;
+use App\Enums\CashMovementType;
 use App\Enums\UserRole;
 use App\Models\CashierShift;
 use App\Models\Customer;
@@ -119,6 +120,12 @@ class SaleActionsTest extends TestCase
             'type' => StockMovementType::SaleOut->value,
             'quantity_change' => -2,
         ]);
+        $this->assertDatabaseHas('cash_movements', [
+            'shift_id' => $shift->id,
+            'type' => CashMovementType::Sale->value,
+            'amount' => 20000,
+            'reference_type' => 'payment',
+        ]);
 
         $closedShift = app(CloseShiftAction::class)->handle($shift, $cashier, 120000);
 
@@ -134,9 +141,33 @@ class SaleActionsTest extends TestCase
             ['product_id' => $product->id, 'quantity' => 2],
         ]);
 
-        $this->expectException(ValidationException::class);
+        try {
+            app(ProcessPaymentAction::class)->handle($sale, $cashier, PaymentMethod::Cash, 20000);
+            $this->fail('Insufficient stock should reject payment.');
+        } catch (ValidationException) {
+            $this->addToAssertionCount(1);
+        }
 
-        app(ProcessPaymentAction::class)->handle($sale, $cashier, PaymentMethod::Cash, 20000);
+        $this->assertDatabaseMissing('cash_movements', [
+            'shift_id' => $shift->id,
+            'type' => CashMovementType::Sale->value,
+        ]);
+    }
+
+    public function test_non_cash_payment_does_not_create_cash_movement(): void
+    {
+        [$cashier, $product, $shift] = $this->prepareSaleContext(10);
+        $sale = app(CreatePendingSaleAction::class)->handle($shift, $cashier, [
+            ['product_id' => $product->id, 'quantity' => 1],
+        ]);
+
+        app(ProcessPaymentAction::class)->handle($sale, $cashier, PaymentMethod::Qris, 10000);
+
+        $this->assertDatabaseCount('cash_movements', 1);
+        $this->assertDatabaseMissing('cash_movements', [
+            'shift_id' => $shift->id,
+            'type' => CashMovementType::Sale->value,
+        ]);
     }
 
     public function test_promotion_discount_is_calculated_server_side_and_reduces_grand_total(): void
@@ -250,6 +281,13 @@ class SaleActionsTest extends TestCase
             'quantity_change' => 2,
             'quantity_before' => 8,
             'quantity_after' => 10,
+        ]);
+        $this->assertDatabaseHas('cash_movements', [
+            'shift_id' => $shift->id,
+            'type' => CashMovementType::Refund->value,
+            'amount' => 20000,
+            'reference_type' => 'sale_return',
+            'reference_id' => $return->id,
         ]);
     }
 

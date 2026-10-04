@@ -3,10 +3,12 @@
 namespace App\Actions\Sale;
 
 use App\Enums\PaymentMethod;
+use App\Enums\CashMovementType;
 use App\Enums\SaleStatus;
 use App\Enums\ShiftStatus;
 use App\Enums\StockMovementType;
 use App\Models\Inventory;
+use App\Models\CashMovement;
 use App\Models\Payment;
 use App\Models\Sale;
 use App\Models\User;
@@ -130,7 +132,7 @@ class ProcessPaymentAction
                 ]);
             }
 
-            Payment::query()->create([
+            $payment = Payment::query()->create([
                 'sale_id' => $sale->id,
                 'method' => $method,
                 'amount_due' => $sale->grand_total,
@@ -140,6 +142,19 @@ class ProcessPaymentAction
                 'paid_at' => now(),
                 'received_by' => $cashier->id,
             ]);
+
+            if ($method->isCash()) {
+                CashMovement::query()->create([
+                    'store_id' => $shift->store_id,
+                    'shift_id' => $shift->id,
+                    'user_id' => $cashier->id,
+                    'type' => CashMovementType::Sale,
+                    'amount' => $payment->amount_due,
+                    'reference_type' => 'payment',
+                    'reference_id' => $payment->id,
+                    'note' => 'Penjualan '.$sale->invoice_number,
+                ]);
+            }
 
             $sale->transitionTo(SaleStatus::Paid);
             $sale->forceFill(['completed_at' => now()])->save();
