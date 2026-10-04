@@ -154,14 +154,14 @@
                     <button class="nl-focus min-h-11 min-w-11 rounded-lg p-2 text-muted hover:bg-gray-100 dark:hover:bg-white/10" type="button" wire:click="cancelProductOptions" x-on:click="modifierOpen = false" aria-label="Tutup pilihan produk"><x-filament::icon icon="heroicon-o-x-mark" class="size-5" /></button>
                 </div>
 
-                <div class="mt-6 space-y-5">
+                <div class="mt-6 space-y-5" role="group" aria-label="Pilihan modifier">
                     @foreach ($this->productForOptions->optionGroups as $group)
                         @if ($group->values->where('is_active', true)->isNotEmpty())
-                            <div>
-                                <div class="mb-2 flex items-center justify-between"><span class="font-semibold">{{ $group->name }}</span><span class="text-xs text-gray-500">{{ $group->is_required ? 'Wajib' : 'Opsional' }}</span></div>
-                                <div class="grid gap-2 sm:grid-cols-2">
+                            <div class="space-y-2" role="group" aria-labelledby="modifier-group-{{ $group->id }}">
+                                <div class="flex items-center justify-between gap-4"><span id="modifier-group-{{ $group->id }}" class="min-w-0 text-sm font-semibold text-foreground">{{ $group->name }}</span><span class="shrink-0 text-xs font-medium text-muted">{{ $group->is_required ? 'Wajib' : 'Opsional' }}</span></div>
+                                <div class="space-y-2">
                                     @foreach ($group->values->where('is_active', true) as $value)
-                                        <button class="nl-focus flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-lg border p-3 text-left {{ $this->isOptionSelected($group->id, $value->id) ? 'border-primary bg-primary-soft' : 'border-border hover:border-primary' }}" type="button" wire:click="{{ $group->maximum_selections === 1 ? 'selectSingleOption('.$group->id.', '.$value->id.')' : 'toggleOption('.$group->id.', '.$value->id.')' }}"><span class="flex items-center gap-2"><span class="grid size-5 place-items-center rounded-full border {{ $this->isOptionSelected($group->id, $value->id) ? 'border-primary bg-primary text-white' : 'border-border' }}">{{ $this->isOptionSelected($group->id, $value->id) ? '✓' : '' }}</span><span>{{ $value->name }}</span></span><span class="text-sm text-muted">{{ $value->price_adjustment > 0 ? '+Rp '.number_format($value->price_adjustment, 0, ',', '.') : 'Gratis' }}</span></button>
+                                        <button wire:key="modifier-option-{{ $group->id }}-{{ $value->id }}" class="nl-focus flex min-h-12 w-full cursor-pointer items-center justify-between gap-4 rounded-lg border px-4 py-3 text-left transition {{ $this->isOptionSelected($group->id, $value->id) ? 'border-primary bg-primary-soft text-foreground' : 'border-border bg-surface hover:border-primary hover:bg-background' }}" type="button" role="{{ $group->maximum_selections === 1 ? 'radio' : 'checkbox' }}" aria-checked="{{ $this->isOptionSelected($group->id, $value->id) ? 'true' : 'false' }}" aria-label="{{ $value->name }}" wire:click="{{ $group->maximum_selections === 1 ? 'selectSingleOption('.$group->id.', '.$value->id.')' : 'toggleOption('.$group->id.', '.$value->id.')' }}"><span class="flex min-w-0 items-center gap-3"><span aria-hidden="true" class="grid size-5 shrink-0 place-items-center rounded-full border {{ $this->isOptionSelected($group->id, $value->id) ? 'border-primary bg-primary' : 'border-border bg-surface' }}">@if ($this->isOptionSelected($group->id, $value->id))<span class="size-2 rounded-full bg-white"></span>@endif</span><span class="min-w-0 break-words text-sm font-medium leading-5">{{ $value->name }}</span></span><span class="shrink-0 whitespace-nowrap text-sm font-medium text-muted">{{ $value->price_adjustment > 0 ? '+Rp '.number_format($value->price_adjustment, 0, ',', '.') : ($value->price_adjustment < 0 ? '-Rp '.number_format(abs($value->price_adjustment), 0, ',', '.') : 'Gratis') }}</span></button>
                                     @endforeach
                                 </div>
                             </div>
@@ -169,7 +169,7 @@
                     @endforeach
                 </div>
 
-                <div class="mt-6 flex gap-3"><button class="nl-focus min-h-11 flex-1 rounded-lg border border-border px-4 py-2 font-medium" type="button" wire:click="cancelProductOptions" x-on:click="modifierOpen = false">Batal</button><button class="nl-focus min-h-11 flex-1 rounded-lg bg-primary px-4 py-2 font-medium text-white hover:bg-primary-hover" type="submit" wire:loading.attr="disabled" wire:target="confirmProductOptions"><span wire:loading.remove wire:target="confirmProductOptions">{{ $editingCartIndex !== null ? 'Simpan perubahan' : 'Tambahkan ke keranjang' }}</span><span wire:loading wire:target="confirmProductOptions">Menyimpan…</span></button></div>
+                <div class="mt-6 flex gap-3"><button class="nl-focus min-h-11 flex-1 rounded-lg border border-border px-4 py-2 font-medium" type="button" wire:click="cancelProductOptions" x-on:click="modifierOpen = false">Batal</button><button class="nl-focus min-h-11 flex-1 rounded-lg bg-primary px-4 py-2 font-medium text-white hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50" type="submit" wire:loading.attr="disabled" wire:target="confirmProductOptions" @disabled(! $this->canConfirmProductOptions())><span wire:loading.remove wire:target="confirmProductOptions">{{ $editingCartIndex !== null ? 'Simpan perubahan' : 'Tambahkan ke keranjang' }}</span><span wire:loading wire:target="confirmProductOptions">Menyimpan…</span></button></div>
                 </form>
             </div>
         </div>

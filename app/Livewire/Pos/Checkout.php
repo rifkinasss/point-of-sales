@@ -274,6 +274,21 @@ class Checkout extends Component
         return in_array($valueId, $this->selectedIdsForGroup($groupId), true);
     }
 
+    public function canConfirmProductOptions(): bool
+    {
+        $product = $this->productForOptions;
+
+        if (! $product) {
+            return false;
+        }
+
+        return $product->optionGroups->every(function ($group): bool {
+            $selectedCount = count($this->selectedIdsForGroup($group->id));
+
+            return ! $group->is_required || $selectedCount >= max(1, (int) $group->minimum_selections);
+        });
+    }
+
     public function getProductForOptionsProperty(): ?Product
     {
         return $this->productForOptionsId
