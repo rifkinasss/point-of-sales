@@ -12,9 +12,9 @@ class PostLoginRedirector
     public function pathFor(User $user): string
     {
         return match ($user->role) {
-            UserRole::Admin => '/admin',
-            UserRole::Owner => '/owner',
-            UserRole::Manager => '/manager',
+            UserRole::Admin => route('filament.admin.pages.dashboard'),
+            UserRole::Owner => route('owner.dashboard'),
+            UserRole::Manager => route('manager.dashboard'),
             UserRole::Cashier => $this->cashierPath($user),
         };
     }
@@ -25,7 +25,7 @@ class PostLoginRedirector
             ->where('user_id', $user->id)
             ->where('status', ShiftStatus::Open)
             ->exists()
-            ? '/cashier/pos'
-            : '/cashier/open-shift';
+            ? route('cashier.pos')
+            : route('cashier.open-shift');
     }
 }
