@@ -9,6 +9,7 @@
         </header>
         <div class="pos-checkout-columns mx-auto grid w-full max-w-[1440px] gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(22rem,1fr)] lg:gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(23rem,1fr)] xl:gap-8">
         <section class="pos-catalog min-w-0">
+            <div class="pos-catalog-controls shrink-0">
             <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
                 <div>
                     <p class="text-sm font-bold text-primary">TRANSAKSI BARU</p>
@@ -28,6 +29,7 @@
                 @endforeach
             </div>
             <div wire:loading.flex wire:target="selectCategory" class="mt-1 items-center gap-2 text-xs font-semibold text-muted">Memuat kategori…</div>
+            </div>
 
             <div class="pos-product-grid mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
                 @forelse ($this->products as $product)
@@ -38,10 +40,10 @@
             </div>
         </section>
 
-        <x-filament::section class="pos-cart-panel lg:sticky lg:top-5">
+        <x-filament::section class="pos-cart-panel">
             <x-slot name="heading"><span class="flex items-center justify-between"><span>PESANAN</span><span class="rounded-md bg-primary-soft px-2.5 py-1 text-xs font-bold text-primary">{{ count($cart) }} item</span></span></x-slot>
 
-            <div class="mb-4">
+            <div class="shrink-0 mb-4">
                 <div class="mb-2 flex items-center justify-between gap-3"><div class="flex min-w-0 items-center gap-2"><x-filament::icon icon="heroicon-o-user" class="size-4 shrink-0 text-muted" aria-hidden="true" /><div><p class="text-xs font-semibold uppercase tracking-wide text-muted">Pelanggan</p>@if ($selectedCustomer = $this->selectedCustomer)<p class="mt-0.5 truncate text-sm font-bold">{{ $selectedCustomer->name }}</p>@else<p class="mt-0.5 text-sm font-semibold text-secondary">Walk-in Customer</p>@endif</div></div><button x-ref="customerTrigger" class="nl-focus inline-flex min-h-11 items-center gap-2 rounded-md px-3 text-xs font-bold text-primary hover:bg-primary-soft" type="button" x-on:click="rememberTrigger($event.currentTarget); customerOpen = true; $nextTick(() => $refs.customerSearch?.focus())">Ubah <x-filament::icon icon="heroicon-o-chevron-right" class="size-4 shrink-0" aria-hidden="true" /></button></div>
                 <div x-show="customerOpen" x-cloak x-transition.opacity.duration.150ms class="pos-modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4" :class="memberOpen ? 'bg-slate-950/50' : ''" x-on:click="closePanel('customerOpen')" role="presentation">
                     <section class="pos-modal-surface flex max-h-[70vh] w-full max-w-xl flex-col rounded-xl border border-border bg-surface shadow-xl dark:border-white/10 dark:bg-gray-900" x-on:click.stop role="dialog" aria-modal="true" aria-labelledby="customer-selector-title">
@@ -99,6 +101,7 @@
                 @endforelse
             </div>
 
+            <div class="pos-cart-footer shrink-0">
             <div class="mt-4 space-y-2 border-t border-border pt-4 text-sm dark:border-white/10">
                 <div class="flex justify-between"><span>Subtotal</span><span>Rp {{ number_format($this->subtotal, 0, ',', '.') }}</span></div>
                 <div class="flex justify-between"><span>Diskon item</span><span>− Rp {{ number_format($this->itemDiscountTotal, 0, ',', '.') }}</span></div>
@@ -147,6 +150,7 @@
                 <span class="inline-flex items-center justify-center gap-2"><x-filament::icon icon="heroicon-o-credit-card" class="size-[18px] shrink-0" aria-hidden="true" /> Bayar · Rp {{ number_format($this->grandTotal, 0, ',', '.') }}</span>
             </x-filament::button>
             <div wire:loading.flex wire:target="createPendingSale,addProduct,scanProduct" class="mt-3 items-center justify-center gap-2 text-xs font-semibold text-primary"><span class="size-2 animate-pulse rounded-full bg-primary"></span>Memproses transaksi…</div>
+            </div>
         </x-filament::section>
         </div>
 
