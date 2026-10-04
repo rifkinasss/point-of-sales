@@ -76,8 +76,16 @@
             <div class="pos-cart-items max-h-[38vh] space-y-3 overflow-x-hidden overflow-y-auto pe-1 lg:max-h-[calc(100dvh-22rem)]">
                 @forelse ($cart as $index => $item)
                     <div class="min-w-0 overflow-x-hidden rounded-lg border border-border p-3 dark:border-white/10">
+                        <div class="flex min-w-0 items-start justify-between gap-3">
+                            <div class="min-w-0 flex-1">
+                                <div class="truncate font-semibold text-foreground dark:text-white">{{ $item['name'] }}</div>
+                            </div>
+                            <div class="inline-flex shrink-0 items-center gap-1">
+                                <button class="nl-focus inline-flex min-h-8 items-center gap-1 rounded-md bg-primary-soft px-2 text-[11px] font-semibold text-primary hover:bg-primary-soft-strong" type="button" wire:click="editItemOptions({{ $index }})" aria-label="Ubah opsi produk"><x-filament::icon icon="heroicon-o-adjustments-horizontal" class="size-3.5 shrink-0" aria-hidden="true" /> <span class="hidden sm:inline">Ubah opsi</span></button>
+                                <button class="nl-focus inline-flex min-h-8 items-center justify-center rounded-md px-2 text-muted hover:bg-red-50 hover:text-danger-600" type="button" wire:click="removeItem({{ $index }})" aria-label="Hapus produk dari pesanan"><x-filament::icon icon="heroicon-o-trash" class="size-4 shrink-0" aria-hidden="true" /><span class="sr-only">Hapus</span></button>
+                            </div>
+                        </div>
                         <div class="min-w-0">
-                            <div class="truncate font-semibold text-foreground dark:text-white">{{ $item['name'] }}</div>
                             <div class="mt-1 truncate text-xs text-muted">Rp {{ number_format($item['price'] + $item['modifier_total'], 0, ',', '.') }} / unit</div>
                             @foreach ($item['modifiers'] as $modifier)
                                 <div class="mt-1 min-w-0 truncate text-xs text-primary">{{ $modifier['group'] }}: {{ $modifier['name'] }}{{ $modifier['price_adjustment'] ? ' (+Rp '.number_format($modifier['price_adjustment'], 0, ',', '.').')' : '' }}</div>
@@ -99,7 +107,6 @@
                                 <div class="pos-modal-footer mt-6 flex items-center justify-between gap-3 border-t border-border pt-5 dark:border-white/10"><button class="nl-focus min-h-11 rounded-lg border border-border bg-surface px-4 py-2 font-semibold text-secondary hover:border-primary hover:text-primary" type="button" x-on:click="itemDiscountIndex = null">Batal</button><button class="nl-focus min-h-11 rounded-lg bg-primary px-4 py-2 font-bold text-white hover:bg-primary-hover" type="button" x-on:click="$wire.set('cart.{{ $index }}.discount', Math.max(0, Number(value) || 0)); itemDiscountIndex = null">Terapkan</button></div>
                             </section>
                         </div>
-                        <div class="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3 dark:border-white/10"><button class="nl-focus inline-flex min-h-9 shrink-0 items-center gap-2 rounded-lg bg-primary-soft px-2.5 text-xs font-semibold text-primary hover:bg-primary-soft-strong" type="button" wire:click="editItemOptions({{ $index }})"><x-filament::icon icon="heroicon-o-adjustments-horizontal" class="size-4 shrink-0" aria-hidden="true" /> Ubah opsi</button><button class="nl-focus inline-flex min-h-9 shrink-0 items-center gap-2 rounded-lg px-2.5 text-xs font-semibold text-muted hover:bg-red-50 hover:text-danger-600" type="button" wire:click="removeItem({{ $index }})"><x-filament::icon icon="heroicon-o-trash" class="size-4 shrink-0" aria-hidden="true" /> Hapus</button></div>
                     </div>
                 @empty
                     <div class="pos-empty-cart py-7 text-center"><span class="mx-auto grid size-10 place-items-center rounded-lg bg-primary-soft text-primary"><x-filament::icon icon="heroicon-o-shopping-cart" class="size-5" aria-hidden="true" /></span><p class="mt-3 text-sm font-bold text-secondary">Pesanan masih kosong</p><p class="mt-1 text-xs text-muted">Pilih produk untuk memulai pesanan.</p></div>
