@@ -24,6 +24,7 @@
 .nl-page { background: var(--nl-background); color: var(--nl-foreground); }
 .nl-surface { border: 1px solid var(--nl-border); border-radius: 0.5rem; background: var(--nl-surface); box-shadow: none; }
 .nl-focus:focus-visible { outline: 3px solid rgb(59 82 226 / 0.28); outline-offset: 2px; }
+.cashier-pos-workspace [x-cloak] { display: none !important; }
 .dark .nl-page { background: #0f172a; color: #f8fafc; }
 .dark .nl-surface { border-color: rgb(226 232 240 / 0.14); background: #0f172a; }
 
@@ -36,6 +37,9 @@
 .cashier-pos-workspace .pos-product-search input:focus-visible { outline: 0; }
 
 @media (min-width: 1280px) {
+    .cashier-pos-workspace .pos-checkout-columns { height: calc(100dvh - 5.75rem); align-items: start; }
+    .cashier-pos-workspace .pos-catalog { display: flex; flex-direction: column; max-height: 100%; }
+    .cashier-pos-workspace .pos-product-grid { min-height: 0; overflow-y: auto; padding-inline-end: 0.25rem; }
     .cashier-pos-workspace .pos-cart-panel { position: sticky; top: 0.75rem; max-height: calc(100dvh - 5.75rem); overflow-y: auto; }
 }
 
