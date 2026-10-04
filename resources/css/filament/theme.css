@@ -1,7 +1,9 @@
 @import '../../../vendor/filament/filament/resources/css/theme.css';
 
 @source '../../../app/Filament/**/*';
+@source '../../../app/Livewire/**/*';
 @source '../../../resources/views/filament/**/*';
+@source '../../../resources/views/livewire/**/*';
 @source '../../../resources/views/components/**/*';
 
 /* Admin has a distinct control-centre treatment while the other panels remain neutral. */

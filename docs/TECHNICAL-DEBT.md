@@ -13,7 +13,7 @@
 - Repository root bukan Git worktree pada checkout ini, sehingga tidak ada branch, commit, atau diff baseline yang dapat diverifikasi.
 - README sebelumnya menggambarkan layout `backend/`; source aktual berada langsung di root project.
 - Generated Filament panel cache sebelumnya memuat path lama; cache sudah dibersihkan pada Phase 0 melalui `php artisan optimize:clear`.
-- Business logic checkout masih besar di `PosCheckout` dan belum dipisahkan seluruhnya dari presentation state.
+- Compatibility shell `PosCheckout` masih terdaftar di Filament; route migration dan penghapusan shell ditunda sampai parity operational POS terverifikasi end-to-end.
 - Cash reconciliation ledger selesai pada Phase 3 melalui `CashMovement`; koreksi histori tetap harus berupa movement baru, bukan edit/delete.
 - Payment sudah mendukung multi-payment per sale.
 - Partial return belum tersedia; status void tersedia untuk pending sale.
@@ -24,12 +24,12 @@
 ## Phase 2 findings
 
 - Tax belum menjadi field snapshot pada `sales`; calculator saat ini memakai `tax_total = 0`. Penambahan tax ditunda sampai aturan pajak dan schema disepakati.
-- UI masih menghitung preview harga/promotion secara lokal untuk responsivitas, tetapi nilai authoritative dibuat ulang oleh `SaleCalculator` di server.
+- Product display price masih memakai lookup presentation untuk responsivitas, sedangkan subtotal, item discount, promotion discount, transaction discount, dan grand total preview kini memakai `SaleCalculator`; nilai final tetap dihitung ulang oleh action server-side.
 - Payment split sudah tersedia dengan row lock dan state validation; distributed idempotency dan payment gateway tetap deferred.
 - Authorization refund/void ditegakkan di action dan juga disembunyikan pada Sales table; policy class khusus belum ada.
 - Inventory saat ini single-store per product (`inventories.product_id` unique), bukan ledger balance per store. Cross-store dijaga melalui store pada product/sale/shift/customer.
 - Payment status sudah mendukung `pending`, `completed`, `failed`, dan `refunded`; refund per payment tetap deferred karena refund masih full-sale.
-- Cash in/out belum memiliki UI khusus; application actions tersedia dan UI minimal dapat ditambahkan tanpa mengubah POS layout.
+- Payment workspace dan shift redesign tidak termasuk Phase 5A; UI tersebut tetap berada pada halaman Filament yang ada sampai phase khusus berikutnya.
 - Refund cash pada shift yang sudah ditutup belum memiliki kebijakan operasional khusus; post-close refund governance tetap deferred.
 
 Dokumen ini bukan desain target dan tidak mengubah business logic.

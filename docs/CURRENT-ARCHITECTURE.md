@@ -38,7 +38,8 @@ Panel discovery berada di `app/Providers/Filament/*PanelProvider.php`. Checkout 
 - Inventory: `app/Actions/Inventory/`.
 - Shift: `app/Actions/Shift/`.
 - Persistence: `app/Models/` dan `database/migrations/`.
-- UI: `app/Filament/` dan `resources/views/`.
+- UI back-office: `app/Filament/` dan `resources/views/filament/`.
+- UI operasional POS: `app/Livewire/Pos/Checkout.php` dan view `resources/views/livewire/pos/checkout.blade.php`.
 
 Dokumen ini hanya mencatat struktur yang ditemukan; belum menetapkan arsitektur refactor final.
 
@@ -47,6 +48,12 @@ Dokumen ini hanya mencatat struktur yang ditemukan; belum menetapkan arsitektur 
 Formula authoritative: gross subtotal - item discount total - promotion discount total - transaction discount total + tax total (saat ini 0) = grand total, minimum 0.
 
 `SaleItem` menyimpan snapshot nama, SKU, unit, harga, modifier, diskon, kuantitas, dan line total sehingga perubahan master product tidak mengubah transaksi historis.
+
+## UI boundary
+
+Filament tetap digunakan untuk resource dan workflow back-office. Livewire `App\Livewire\Pos\Checkout` menangani workspace checkout: search, category filter, cart interaction, customer/promotion selection, dan handoff ke pending sale. `SaleCalculator` dan `CreatePendingSaleAction` tetap menjadi authority server-side; komponen Livewire tidak menyimpan payment, inventory, atau status sale secara langsung.
+
+`App\Filament\Cashier\Pages\PosCheckout` masih dipertahankan sebagai compatibility shell untuk route/panel Filament yang sudah ada, dan merender Livewire workspace. Shell ini belum dihapus sampai parity dan route migration berikutnya diselesaikan.
 
 ## Payment invariant
 

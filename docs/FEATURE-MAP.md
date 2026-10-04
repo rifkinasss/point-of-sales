@@ -9,7 +9,7 @@ Status capability berdasarkan source saat Phase 0.
 | Product, category, unit | Available | Product-related Filament resources dan models |
 | Inventory balance dan stock movement | Available | `Inventory`, `StockMovement`, inventory actions |
 | Cashier shift | Available | `OpenShift`, `CloseShift`, `CashierShift` |
-| Checkout dan payment | Available | `PosCheckout`, `PaymentPage`, sale actions |
+| Checkout dan payment | Available | `App\Livewire\Pos\Checkout`, compatibility shell `PosCheckout`, `PaymentPage`, sale actions |
 | Refund penuh | Available | `RefundSaleAction`, Sales table action; hanya `paid -> refunded`, role admin/owner/manager |
 | Void transaksi pending | Available | `VoidSaleAction`, Sales table action; hanya `pending_payment -> voided`, role admin/owner/manager |
 | Cash register ledger | Available | `CashMovement`, `CashBalanceCalculator`, opening/payment/refund/cash in/cash out integration |

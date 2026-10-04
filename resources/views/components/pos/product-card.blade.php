@@ -1,8 +1,11 @@
 @props(['product', 'price' => null])
 
+@php($outOfStock = $product->product_type->tracksInventory() && ($product->inventory?->quantity ?? 0) < 1)
+
 <button
-    class="pos-product-card group flex min-h-52 flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white text-left shadow-sm transition duration-150 hover:-translate-y-1 hover:border-indigo-400 hover:shadow-xl dark:border-white/10 dark:bg-white/5 dark:hover:border-indigo-400"
+    class="pos-product-card group flex min-h-52 flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white text-left shadow-sm transition duration-150 hover:-translate-y-1 hover:border-indigo-400 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-white/5 dark:hover:border-indigo-400"
     type="button"
+    @disabled($outOfStock)
     wire:click="addProduct({{ $product->id }})"
 >
     <div class="relative flex min-h-28 items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-violet-50 p-4 dark:from-indigo-500/15 dark:via-gray-900 dark:to-violet-500/10">
@@ -15,6 +18,9 @@
         @endif
         @if ($product->product_type->tracksInventory())
             <span class="absolute right-3 top-3 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 shadow-sm dark:bg-emerald-500/15 dark:text-emerald-300">Stok {{ $product->inventory?->quantity ?? 0 }}</span>
+        @endif
+        @if ($outOfStock)
+            <span class="absolute inset-x-3 bottom-3 rounded-lg bg-gray-900/80 px-2 py-1 text-center text-xs font-bold text-white">Stok habis</span>
         @endif
     </div>
 
