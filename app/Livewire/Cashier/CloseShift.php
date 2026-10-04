@@ -27,6 +27,8 @@ class CloseShift extends Component
 
     public string $movementNote = '';
 
+    public bool $movementModalOpen = false;
+
     public ?string $message = null;
 
     public function mount(): void
@@ -106,6 +108,20 @@ class CloseShift extends Component
         $this->reset(['movementAmount', 'movementNote']);
         $this->shift = $this->currentShift();
         $this->message = 'Pergerakan kas berhasil dicatat.';
+        $this->movementModalOpen = false;
+    }
+
+    public function openMovementModal(string $type = 'cash_in'): void
+    {
+        $this->resetValidation();
+        $this->movementType = in_array($type, ['cash_in', 'cash_out'], true) ? $type : 'cash_in';
+        $this->movementModalOpen = true;
+    }
+
+    public function closeMovementModal(): void
+    {
+        $this->resetValidation();
+        $this->movementModalOpen = false;
     }
 
     /** @return array{opening: int, sales: int, cashIn: int, refunds: int, cashOut: int, expected: int} */

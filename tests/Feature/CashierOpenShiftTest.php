@@ -2,9 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Actions\Shift\OpenShiftAction;
 use App\Enums\CashMovementType;
 use App\Enums\ShiftStatus;
 use App\Enums\UserRole;
+use App\Livewire\Cashier\CloseShift;
 use App\Livewire\Cashier\OpenShift;
 use App\Models\CashierShift;
 use App\Models\Store;
@@ -119,6 +121,21 @@ class CashierOpenShiftTest extends TestCase
         Livewire::actingAs($cashier)
             ->test(OpenShift::class)
             ->assertRedirect('/cashier/pos');
+    }
+
+    public function test_close_shift_workspace_opens_cash_movement_modal_without_changing_shift_rules(): void
+    {
+        $cashier = $this->cashier();
+        app(OpenShiftAction::class)->handle($cashier, 100000);
+
+        Livewire::actingAs($cashier)
+            ->test(CloseShift::class)
+            ->assertSet('movementModalOpen', false)
+            ->call('openMovementModal', 'cash_out')
+            ->assertSet('movementModalOpen', true)
+            ->assertSet('movementType', 'cash_out')
+            ->call('closeMovementModal')
+            ->assertSet('movementModalOpen', false);
     }
 
     public function test_non_cashier_cannot_open_shift(): void
