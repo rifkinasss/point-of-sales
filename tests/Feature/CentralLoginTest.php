@@ -13,6 +13,13 @@ class CentralLoginTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_login_has_one_unified_entry_point(): void
+    {
+        $this->get('/login')
+            ->assertOk()
+            ->assertSee('Masuk ke NasLabs ERP');
+    }
+
     public function test_login_redirects_each_role_to_its_own_panel(): void
     {
         $paths = [
@@ -29,7 +36,7 @@ class CentralLoginTest extends TestCase
                 'role' => $role,
             ]);
 
-            $response = $this->post('/auth/login', [
+            $response = $this->post('/login', [
                 'email' => $user->email,
                 'password' => 'password',
             ]);
@@ -47,13 +54,26 @@ class CentralLoginTest extends TestCase
             'is_active' => false,
         ]);
 
-        $response = $this->from('/auth/login')->post('/auth/login', [
+        $response = $this->from('/login')->post('/login', [
             'email' => $user->email,
             'password' => 'password',
         ]);
 
         $response
-            ->assertRedirect('/auth/login')
+            ->assertRedirect('/login')
+            ->assertSessionHasErrors('email');
+        $this->assertGuest();
+    }
+
+    public function test_invalid_credentials_remain_on_the_unified_login(): void
+    {
+        $response = $this->from('/login')->post('/login', [
+            'email' => 'unknown@example.test',
+            'password' => 'wrong-password',
+        ]);
+
+        $response
+            ->assertRedirect('/login')
             ->assertSessionHasErrors('email');
         $this->assertGuest();
     }
@@ -66,7 +86,7 @@ class CentralLoginTest extends TestCase
         ]);
         app(OpenShiftAction::class)->handle($cashier, 100000);
 
-        $this->post('/auth/login', [
+        $this->post('/login', [
             'email' => $cashier->email,
             'password' => 'password',
         ])->assertRedirect('/cashier/pos');

@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers\Auth;
 
-use App\Enums\UserRole;
 use App\Enums\ShiftStatus;
+use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\CashierShift;
 use App\Models\User;
+use App\Services\PostLoginRedirector;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -14,19 +15,19 @@ use Illuminate\View\View;
 
 class LoginController extends Controller
 {
-    public function create(): View|RedirectResponse
+    public function create(PostLoginRedirector $redirector): View|RedirectResponse
     {
         if (Auth::check()) {
             /** @var User $user */
             $user = Auth::user();
 
-            return redirect()->to($this->panelPath($user->role));
+            return redirect()->to($redirector->pathFor($user));
         }
 
         return view('auth.login');
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, PostLoginRedirector $redirector): RedirectResponse
     {
         $credentials = $request->validate([
             'email' => ['required', 'email'],
@@ -52,7 +53,7 @@ class LoginController extends Controller
         $request->session()->regenerate();
         $user->forceFill(['last_login_at' => now()])->save();
 
-        return redirect()->to($this->panelPath($user->role));
+        return redirect()->to($redirector->pathFor($user));
     }
 
     public function destroy(Request $request): RedirectResponse
@@ -74,16 +75,4 @@ class LoginController extends Controller
         return redirect()->route('auth.login');
     }
 
-    private function panelPath(UserRole $role): string
-    {
-        return match ($role) {
-            UserRole::Admin => '/admin',
-            UserRole::Owner => '/owner',
-            UserRole::Manager => '/manager',
-            UserRole::Cashier => CashierShift::query()
-                ->where('user_id', auth()->id())
-                ->where('status', ShiftStatus::Open)
-                ->exists() ? '/cashier/pos' : '/cashier/open-shift',
-        };
-    }
 }
