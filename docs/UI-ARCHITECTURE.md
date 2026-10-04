@@ -20,13 +20,15 @@ Filament is restricted to admin back-office resources and pages. Livewire owns c
 - View: `resources/views/livewire/pos/checkout.blade.php`
 - Product card: `resources/views/components/pos/product-card.blade.php`
 - Cashier route entry points: `routes/web.php` (`/cashier/open-shift`, `/cashier/pos`, `/cashier/pos-checkout`, `/cashier/payment-page`, `/cashier/receipt-page`, `/cashier/close-shift`)
-- Payment workspace: `app/Livewire/Cashier/PosCheckout.php` and `resources/views/livewire/cashier/pos-checkout.blade.php`; `/cashier/payment-page?sale=...` is a fallback entry into the same modal component.
+- Payment workspace: `app/Livewire/Cashier/PosCheckout.php` and `resources/views/livewire/cashier/pos-checkout.blade.php`; `/cashier/payment-page?sale=...` is a fallback entry into the same modal component and accepts the sale `invoice_number`, not the internal numeric ID.
 - Receipt printing: `CashierReceiptPrintController` serves `/cashier/receipts/{sale}/print` as a receipt-only 80mm print view, separate from the payment modal and application shell.
 - Payment workspace supports split payment across cash, manually verified QRIS, and manually verified bank transfer. Manual QR/rekening display is configured through environment-backed `config/payment.php`; no provider settlement is implied.
 - Shared cashier layout: `resources/views/components/layouts/cashier.blade.php`
 - Shared manager/owner layout: `resources/views/components/layouts/workspace.blade.php`
 
 Search uses database filtering for name, SKU, and barcode with a bounded result set. Barcode Enter submits directly to the lookup flow. Product cards show price, inventory availability, and modifier affordance without exposing cost or persistence fields.
+
+POS Livewire state stores product, category, customer, modifier, and payment-sale references as public identifiers. Application actions resolve those identifiers back to internal numeric keys only at the server boundary.
 
 ## Authority rules
 

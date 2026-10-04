@@ -80,10 +80,24 @@ class PosCheckoutTest extends TestCase
         );
 
         $this->actingAs($cashier)
-            ->get('/cashier/payment-page?sale='.$sale->id)
+            ->get('/cashier/payment-page?sale='.$sale->invoice_number)
             ->assertOk()
             ->assertSee('Selesaikan transaksi')
             ->assertSee('ALOKASI PEMBAYARAN');
+    }
+
+    public function test_numeric_sale_query_does_not_open_the_payment_workspace(): void
+    {
+        [$cashier, $product] = $this->prepareCheckoutContext();
+        $sale = app(CreatePendingSaleAction::class)->handle(
+            $cashier->cashierShifts()->where('status', 'open')->firstOrFail(),
+            $cashier,
+            [['product_id' => $product->id, 'quantity' => 1]],
+        );
+
+        $this->actingAs($cashier)
+            ->get('/cashier/payment-page?sale='.$sale->id)
+            ->assertRedirect('/cashier/pos');
     }
 
     public function test_dedicated_receipt_print_route_renders_receipt_only_for_paid_sale(): void
@@ -215,7 +229,7 @@ class PosCheckoutTest extends TestCase
         $this->assertSame(UserRole::Cashier, $cashier->fresh()->role);
         $this->assertTrue($cashier->fresh()->is_active);
         $component = $this->cashierCheckout($cashier)
-            ->call('addProduct', $product->id)
+            ->call('addProduct', $product->public_id)
             ->call('createPendingSale')
             ->assertSet('paymentModalOpen', true);
 
@@ -254,7 +268,7 @@ class PosCheckoutTest extends TestCase
             ->assertSee($category->name)
             ->set('search', $product->sku)
             ->assertSee($product->name)
-            ->set('selectedCategoryId', $category->id)
+            ->set('selectedCategoryPublicId', $category->public_id)
             ->assertSee($product->name);
     }
 
@@ -263,7 +277,7 @@ class PosCheckoutTest extends TestCase
         [$cashier, $product] = $this->prepareCheckoutContext();
 
         $component = $this->checkout($cashier)
-            ->call('addProduct', $product->id)
+            ->call('addProduct', $product->public_id)
             ->assertDontSee('Ubah opsi')
             ->assertSet('cart.0.quantity', 1)
             ->call('increaseQuantity', 0)
@@ -281,7 +295,7 @@ class PosCheckoutTest extends TestCase
         [$cashier, $product] = $this->prepareCheckoutContext();
 
         $component = $this->checkout($cashier)
-            ->call('addProduct', $product->id)
+            ->call('addProduct', $product->public_id)
             ->assertSet('subtotal', 10000)
             ->assertSet('grandTotal', 10000);
 
@@ -296,7 +310,7 @@ class PosCheckoutTest extends TestCase
         $this->checkout($cashier)
             ->set('search', $product->barcode)
             ->call('scanProduct')
-            ->assertSet('cart.0.product_id', $product->id);
+            ->assertSet('cart.0.product_public_id', $product->public_id);
 
         $cashier->cashierShifts()->update(['status' => 'closed']);
 

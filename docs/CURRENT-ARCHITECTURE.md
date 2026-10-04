@@ -61,6 +61,23 @@ Owner   -> Livewire
 
 Livewire components call shared Actions, Services, and Queries. Canonical sale, payment, inventory, and cash-ledger rules remain outside the UI layer.
 
+## Identifier boundary
+
+Numeric primary keys and foreign keys are internal implementation details. Database relationships such as `sales.customer_id`, `payments.sale_id`, and `sale_items.product_id` remain numeric and are not exposed as public identifiers.
+
+POS browser/Livewire surfaces use non-sequential identifiers:
+
+| Entity | Public identifier | Scope |
+| --- | --- | --- |
+| Sale / receipt | `invoice_number` (`POS-YYYYMMDD-ULID`) | Receipt route and payment query |
+| Product | `public_id` ULID | Product cards and cart state |
+| Category | `public_id` ULID | Category filter state |
+| Customer | `public_id` ULID | Customer selector and cart state |
+| Modifier group/value | `public_id` ULID | Modifier selection state |
+| Redeem code | immutable promotion code | Promotion input; no internal redeem-code ID in Livewire state |
+
+All public identifier lookups still enforce authentication, cashier ownership, and current-store scope. ULID/unpredictability reduces enumeration risk but is not an authorization mechanism. Filament admin internals may continue to use numeric record IDs where the framework requires them.
+
 ## Payment invariant
 
 Satu sale dapat memiliki beberapa payment completed melalui `payments.sale_id`; totalnya tidak boleh melebihi grand total. Sale menjadi `paid` hanya setelah total allocation dan stock movement berhasil dalam transaction yang sama. Retry payment pada sale non-pending ditolak.
