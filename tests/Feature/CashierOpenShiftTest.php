@@ -35,7 +35,7 @@ class CashierOpenShiftTest extends TestCase
         $component = Livewire::actingAs($cashier)->test(OpenShift::class);
 
         $component
-            ->set('openingCash', '100.000')
+            ->set('openingCash', 100000)
             ->set('openingNote', 'Serah terima pagi')
             ->call('openShift')
             ->assertRedirect('/cashier/pos-checkout');
@@ -51,40 +51,25 @@ class CashierOpenShiftTest extends TestCase
         ]);
     }
 
-    public function test_rupiah_prefixed_opening_cash_is_normalized_to_integer(): void
+    public function test_canonical_opening_cash_is_kept_as_integer_for_the_action(): void
     {
         $cashier = $this->cashier();
 
         Livewire::actingAs($cashier)
             ->test(OpenShift::class)
-            ->set('openingCashDisplay', 'Rp 300.000')
+            ->set('openingCash', 9000000)
+            ->assertSet('openingCash', 9000000)
             ->call('openShift')
             ->assertRedirect('/cashier/pos-checkout');
 
         $this->assertDatabaseHas('cashier_shifts', [
             'user_id' => $cashier->id,
-            'opening_cash' => 300000,
+            'opening_cash' => 9000000,
         ]);
 
         $this->assertDatabaseHas('cash_movements', [
             'user_id' => $cashier->id,
-            'amount' => 300000,
-        ]);
-    }
-
-    public function test_formatted_opening_cash_is_normalized_to_integer(): void
-    {
-        $cashier = $this->cashier();
-
-        Livewire::actingAs($cashier)
-            ->test(OpenShift::class)
-            ->set('openingCash', '300.000')
-            ->call('openShift')
-            ->assertRedirect('/cashier/pos-checkout');
-
-        $this->assertDatabaseHas('cashier_shifts', [
-            'user_id' => $cashier->id,
-            'opening_cash' => 300000,
+            'amount' => 9000000,
         ]);
     }
 
@@ -94,7 +79,7 @@ class CashierOpenShiftTest extends TestCase
 
         Livewire::actingAs($cashier)
             ->test(OpenShift::class)
-            ->set('openingCash', '0')
+            ->set('openingCash', 0)
             ->call('openShift')
             ->assertRedirect('/cashier/pos-checkout');
 
@@ -105,17 +90,19 @@ class CashierOpenShiftTest extends TestCase
         ]);
     }
 
-    public function test_invalid_opening_cash_is_rejected_without_creating_shift(): void
+    public function test_opening_cash_defaults_to_zero_and_is_accepted(): void
     {
         $cashier = $this->cashier();
 
         Livewire::actingAs($cashier)
             ->test(OpenShift::class)
-            ->set('openingCash', 'bukan angka')
             ->call('openShift')
-            ->assertHasErrors(['openingCash']);
+            ->assertRedirect('/cashier/pos-checkout');
 
-        $this->assertDatabaseCount('cashier_shifts', 0);
+        $this->assertDatabaseHas('cashier_shifts', [
+            'user_id' => $cashier->id,
+            'opening_cash' => 0,
+        ]);
     }
 
     public function test_cashier_with_active_shift_is_redirected_to_pos(): void

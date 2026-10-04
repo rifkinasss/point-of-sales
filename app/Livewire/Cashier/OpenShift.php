@@ -13,9 +13,7 @@ use Livewire\Component;
 
 class OpenShift extends Component
 {
-    public string $openingCash = '';
-
-    public string $openingCashDisplay = '';
+    public int $openingCash = 0;
 
     public string $openingNote = '';
 
@@ -47,14 +45,6 @@ class OpenShift extends Component
         }
 
         $cashier = $this->cashier();
-        $openingCash = $this->normalizedOpeningCash();
-
-        if ($openingCash === null) {
-            return;
-        }
-
-        $this->openingCash = (string) $openingCash;
-        $this->openingCashDisplay = $this->formatOpeningCash($openingCash);
 
         $this->validate([
             'openingCash' => ['required', 'integer', 'min:0'],
@@ -69,7 +59,7 @@ class OpenShift extends Component
         try {
             app(OpenShiftAction::class)->handle(
                 $cashier,
-                (int) $this->openingCash,
+                $this->openingCash,
                 trim($this->openingNote) !== '' ? trim($this->openingNote) : null,
             );
         } catch (ValidationException $exception) {
@@ -118,29 +108,4 @@ class OpenShift extends Component
             ->first();
     }
 
-    private function normalizedOpeningCash(): ?int
-    {
-        $raw = trim($this->openingCash !== '' ? $this->openingCash : $this->openingCashDisplay);
-
-        if ($raw === '' || ! preg_match('/^(?:rp\s*)?[0-9][0-9.,\s]*$/i', $raw)) {
-            $this->addError('openingCash', 'Kas awal harus berupa angka Rupiah yang valid.');
-
-            return null;
-        }
-
-        $digits = preg_replace('/\D/', '', $raw);
-
-        if ($digits === null || $digits === '') {
-            $this->addError('openingCash', 'Kas awal harus berupa angka Rupiah yang valid.');
-
-            return null;
-        }
-
-        return (int) $digits;
-    }
-
-    private function formatOpeningCash(int $amount): string
-    {
-        return number_format($amount, 0, ',', '.');
-    }
 }
