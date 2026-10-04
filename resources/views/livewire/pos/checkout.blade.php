@@ -116,15 +116,16 @@
                                 <div>
                                     <label class="mb-1 block text-xs text-muted" for="transaction-discount">Diskon transaksi</label>
                                     <div x-data="{ display: new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format({{ (int) $this->manualTransactionDiscount }}), format(value) { const digits = String(value ?? '').replace(/\D/g, ''); return digits ? new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(Number(digits)) : ''; }, update(event) { const digits = String(event.target.value ?? '').replace(/\D/g, ''); const value = digits === '' ? 0 : Number(digits); this.display = this.format(digits); event.target.value = this.display; $wire.set('manualTransactionDiscount', value, false); } }">
-                                        <x-filament::input.wrapper prefix="Rp" class="rounded-lg border border-border bg-surface">
-                                            <x-filament::input x-ref="transactionDiscount" id="transaction-discount" class="!min-h-11" type="text" inputmode="numeric" autocomplete="off" x-bind:value="display" x-on:input="update($event)" />
-                                        </x-filament::input.wrapper>
+                                        <div class="flex min-h-11 items-center rounded-lg border border-border bg-surface transition focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/10">
+                                            <span class="shrink-0 ps-3 text-sm font-semibold text-muted">Rp</span>
+                                            <input x-ref="transactionDiscount" id="transaction-discount" class="min-w-0 flex-1 border-0 bg-transparent px-2 pe-3 text-sm text-foreground outline-none placeholder:text-muted focus:ring-0 dark:text-white" type="text" inputmode="numeric" autocomplete="off" x-bind:value="display" x-on:input="update($event)" aria-label="Nominal diskon transaksi" />
+                                        </div>
                                     </div>
                                 </div>
                                 <div>
                                     <label class="mb-1 block text-xs text-muted" for="promotion-code">Kode promosi</label>
                                     <div x-data="{ code: @entangle('promotionCode').live }" class="flex flex-col gap-2 sm:flex-row">
-                                        <x-filament::input.wrapper class="min-w-0 flex-1 rounded-lg border border-border bg-surface"><x-filament::input id="promotion-code" class="!min-h-11" x-model="code" placeholder="Masukkan kode promosi" /></x-filament::input.wrapper>
+                                        <div class="flex min-h-11 min-w-0 flex-1 items-center rounded-lg border border-border bg-surface transition focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/10"><input id="promotion-code" class="min-w-0 flex-1 border-0 bg-transparent px-3 text-sm uppercase text-foreground outline-none placeholder:normal-case placeholder:text-muted focus:ring-0 dark:text-white" x-model="code" placeholder="Masukkan kode promosi" /></div>
                                         <button class="nl-focus inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-lg border border-blue-200 bg-primary-soft px-4 py-2 text-sm font-bold text-primary hover:border-primary hover:bg-primary-soft-strong disabled:cursor-not-allowed disabled:border-border disabled:bg-slate-100 disabled:text-slate-400" type="button" wire:click="applyPromotion" x-bind:disabled="! code.trim()"><x-filament::icon icon="heroicon-o-tag" class="size-4" aria-hidden="true" /> Pakai</button>
                                     </div>
                                     @if ($redeemCodeId)
@@ -135,7 +136,7 @@
                                     @endif
                                 </div>
                             </div>
-                            <div class="pos-modal-footer mt-6 flex items-center justify-between gap-3 border-t border-border pt-5 dark:border-white/10"><button class="nl-focus min-h-11 rounded-lg border border-border bg-surface px-4 py-2 font-semibold text-secondary hover:border-primary hover:text-primary" type="button" x-on:click="closePanel('adjustmentsOpen')">Batal</button><button class="nl-focus min-h-11 rounded-lg bg-primary px-4 py-2 font-bold text-white hover:bg-primary-hover" type="button" wire:click="applyPromotion" x-on:click="adjustmentsOpen = false">Terapkan</button></div>
+                            <div class="pos-modal-footer mt-6 flex items-center justify-end gap-2 border-t border-border pt-5 dark:border-white/10"><button class="nl-focus min-h-11 rounded-lg border border-border bg-surface px-4 py-2 font-semibold text-secondary hover:border-primary hover:text-primary" type="button" x-on:click="closePanel('adjustmentsOpen')">Batal</button><button class="nl-focus min-h-11 rounded-lg bg-primary px-4 py-2 font-bold text-white hover:bg-primary-hover" type="button" wire:click="applyPromotion" x-on:click="adjustmentsOpen = false">Terapkan</button></div>
                         </section>
                     </div>
                 </div>
