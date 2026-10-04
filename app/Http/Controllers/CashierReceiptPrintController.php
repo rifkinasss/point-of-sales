@@ -7,6 +7,7 @@ use App\Enums\UserRole;
 use App\Models\Sale;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class CashierReceiptPrintController extends Controller
@@ -24,6 +25,12 @@ class CashierReceiptPrintController extends Controller
             ->where('status', SaleStatus::Paid)
             ->firstOrFail();
 
-        return view('cashier.receipt-print', compact('sale'));
+        $logoUrl = null;
+
+        if ($sale->store?->logo_path && Storage::disk('public')->exists($sale->store->logo_path)) {
+            $logoUrl = Storage::disk('public')->url($sale->store->logo_path);
+        }
+
+        return view('cashier.receipt-print', compact('sale', 'logoUrl'));
     }
 }

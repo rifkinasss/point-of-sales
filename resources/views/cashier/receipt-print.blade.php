@@ -11,6 +11,7 @@
             .receipt-preview { width: 80mm; max-width: calc(100vw - 32px); margin: 32px auto; }
             .receipt { width: 100%; padding: 18px 14px; background: #fff; }
             .center { text-align: center; }
+            .receipt-logo { display: block; width: auto; max-width: 72px; height: auto; max-height: 52px; margin: 0 auto 6px; object-fit: contain; }
             .store-name, .receipt-title, .total { font-weight: 800; }
             .store-name { font-size: 15px; }
             .receipt-title { margin-top: 10px; font-size: 13px; letter-spacing: .08em; }
@@ -34,6 +35,7 @@
                 body { background: #fff; font-size: 11px; }
                 .receipt-preview { width: 80mm; max-width: none; margin: 0; }
                 .receipt { padding: 4mm 3mm; }
+                .receipt-logo { max-width: 18mm; max-height: 14mm; }
                 .receipt-actions { display: none; }
             }
         </style>
@@ -42,6 +44,14 @@
         <main class="receipt-preview">
             <article class="receipt" aria-label="Struk pembayaran {{ $sale->invoice_number }}">
                 <header class="center">
+                    @if ($logoUrl)
+                        <img
+                            class="receipt-logo"
+                            src="{{ $logoUrl }}"
+                            alt="Logo {{ $sale->store?->name ?? 'NasLabs POS' }}"
+                            onerror="this.hidden = true"
+                        >
+                    @endif
                     <div class="store-name">{{ $sale->store?->name ?? 'NasLabs POS' }}</div>
                     @if ($sale->store?->address)<div class="muted">{{ $sale->store->address }}</div>@endif
                     @if ($sale->store?->phone)<div class="muted">{{ $sale->store->phone }}</div>@endif

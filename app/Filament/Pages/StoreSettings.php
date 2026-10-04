@@ -61,6 +61,7 @@ class StoreSettings extends Page implements HasForms
                         FileUpload::make('logo_path')
                             ->label('Logo toko')
                             ->image()
+                            ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
                             ->directory('store-logos')
                             ->disk('public')
                             ->visibility('public')

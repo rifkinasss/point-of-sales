@@ -19,6 +19,7 @@ use App\Models\Unit;
 use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -104,6 +105,45 @@ class PosCheckoutTest extends TestCase
             ->assertSee('Tunai diterima')
             ->assertSee('Kembalian')
             ->assertDontSee('Kembali ke POS');
+    }
+
+    public function test_receipt_print_includes_store_logo_when_a_valid_logo_exists(): void
+    {
+        [$cashier, $product] = $this->prepareCheckoutContext();
+        $sale = app(CreatePendingSaleAction::class)->handle(
+            $cashier->cashierShifts()->where('status', 'open')->firstOrFail(),
+            $cashier,
+            [['product_id' => $product->id, 'quantity' => 1]],
+        );
+        app(AddPaymentAction::class)->handle($sale, $cashier, PaymentMethod::Cash, 10000, 10000);
+
+        Storage::fake('public');
+        Storage::disk('public')->put('store-logos/test.png', 'valid-logo-placeholder');
+        $sale->store()->update(['logo_path' => 'store-logos/test.png']);
+
+        $this->actingAs($cashier)
+            ->get(route('cashier.receipt.print', $sale))
+            ->assertOk()
+            ->assertSee('alt="Logo Toko POS uji"', false)
+            ->assertSee('/storage/store-logos/test.png', false);
+    }
+
+    public function test_receipt_print_omits_missing_store_logo_and_keeps_text_header(): void
+    {
+        [$cashier, $product] = $this->prepareCheckoutContext();
+        $sale = app(CreatePendingSaleAction::class)->handle(
+            $cashier->cashierShifts()->where('status', 'open')->firstOrFail(),
+            $cashier,
+            [['product_id' => $product->id, 'quantity' => 1]],
+        );
+        app(AddPaymentAction::class)->handle($sale, $cashier, PaymentMethod::Cash, 10000, 10000);
+        $sale->store()->update(['logo_path' => 'store-logos/missing.png']);
+
+        $this->actingAs($cashier)
+            ->get(route('cashier.receipt.print', $sale))
+            ->assertOk()
+            ->assertSee('Toko POS uji')
+            ->assertDontSee('alt="Logo Toko POS uji"', false);
     }
 
     public function test_cashier_payment_modal_uses_the_pending_sale_and_supports_split_payment(): void
