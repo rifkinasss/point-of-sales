@@ -19,6 +19,7 @@
 @endphp
 
 <div class="space-y-7">
+    <div class="flex justify-end"><a href="{{ route('manager.products.index', ['stock_status' => 'low']) }}" class="text-sm font-bold text-primary hover:underline">Buka monitoring produk & stok →</a></div>
     <section class="flex flex-wrap items-end justify-between gap-5">
         <div><div class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-primary"><span class="size-1.5 rounded-full bg-primary"></span>Operational overview</div><h1 class="mt-3 text-3xl font-black tracking-tight text-foreground lg:text-4xl">Dashboard Operasional</h1><p class="mt-2 max-w-xl text-sm leading-6 text-muted">Ringkasan aktivitas toko hari ini untuk membantu manager mengambil keputusan dengan cepat.</p></div>
         <div class="flex items-center gap-3 rounded-lg border border-border bg-surface px-3.5 py-3 text-sm"><span class="grid size-9 place-items-center rounded-md bg-primary-soft text-primary"><x-filament::icon icon="heroicon-o-building-storefront" class="size-5" aria-hidden="true" /></span><div><p class="text-[11px] font-bold uppercase tracking-wider text-muted">Store aktif</p><p class="mt-0.5 font-semibold text-foreground">{{ auth()->user()?->store?->name ?? 'Store' }}</p></div></div>

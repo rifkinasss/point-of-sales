@@ -35,12 +35,12 @@ Only `AdminPanelProvider` remains registered. Cashier, manager, and owner entry 
 - Payment: `Sale 1:N Payment`. `PaymentAllocator` menghitung completed payment, total paid, remaining due, dan breakdown method. Sale baru menjadi `paid` setelah completed payments tepat memenuhi grand total.
  - Void/refund: `VoidSaleAction` hanya menerima pending sale; `RefundSaleAction` hanya menerima paid sale dan membalik stock movement secara atomic.
  - Invoice: `InvoiceNumberGenerator` menghasilkan nomor bisnis berbasis `store_code`, optional `branch_code`, tanggal bisnis lokal toko, dan sequence atomic enam digit. `invoice_number` immutable dan unique; `Sale.public_id` tetap menjadi identifier publik non-sequential.
-- Inventory: `app/Actions/Inventory/`.
+- Inventory: `app/Actions/Inventory/`; Manager monitoring uses `inventories.quantity` and append-only `stock_movements`, with `AdjustStockAction` as the controlled adjustment boundary.
 - Shift: `app/Actions/Shift/`.
 - Persistence: `app/Models/` dan `database/migrations/`.
 - UI back-office: `app/Filament/` and `resources/views/filament/` through the admin panel.
 - Cashier UI: `app/Livewire/Cashier/`, `app/Livewire/Pos/Checkout.php`, and `resources/views/livewire/`.
-- Manager/owner read-only UI: `app/Livewire/Manager/`, `app/Livewire/Owner/`, and `app/Queries/`. Manager monitoring includes `/manager/transactions`, `/manager/shifts`, and `/manager/cash`.
+- Manager/owner read-only UI: `app/Livewire/Manager/`, `app/Livewire/Owner/`, and `app/Queries/`. Manager monitoring includes `/manager/transactions`, `/manager/shifts`, `/manager/cash`, and `/manager/products`; product adjustment is the only controlled Manager inventory mutation.
 
 Dokumen ini hanya mencatat struktur yang ditemukan; belum menetapkan arsitektur refactor final.
 
@@ -75,6 +75,7 @@ POS browser/Livewire surfaces use non-sequential identifiers:
 | Customer | `public_id` ULID | Customer selector and cart state |
 | Modifier group/value | `public_id` ULID | Modifier selection state |
 | Cashier shift | `public_id` ULID | Manager shift monitoring route |
+| Product | `public_id` ULID | Manager product routes and browser state |
 | Redeem code | immutable promotion code | Promotion input; no internal redeem-code ID in Livewire state |
 
 All public identifier lookups still enforce authentication, cashier ownership, and current-store scope. ULID/unpredictability reduces enumeration risk but is not an authorization mechanism. Filament admin internals may continue to use numeric record IDs where the framework requires them.

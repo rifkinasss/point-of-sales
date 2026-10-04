@@ -38,6 +38,7 @@ class Product extends Model
             'minimum_stock' => 'integer',
             'product_type' => ProductType::class,
             'selling_price' => 'integer',
+            'last_movement_at' => 'datetime',
         ];
     }
 

@@ -7,7 +7,7 @@ Status capability berdasarkan source aktual setelah presentation migration.
 | Authentication | Available | `app/Http/Controllers/Auth/` |
 | Role dan access | Available | `app/Enums/UserRole.php`, Livewire guards, Admin panel provider |
 | Product, category, unit | Available | Product-related Filament resources dan models |
-| Inventory balance dan stock movement | Available | `Inventory`, `StockMovement`, inventory actions |
+| Inventory balance dan stock movement | Available | `Inventory`, `StockMovement`, inventory actions, Manager `/manager/products` monitoring |
 | Cashier shift | Available | `App\Livewire\Cashier\OpenShift`, `CloseShift`, `CashierShift` |
 | Checkout dan payment | Available | `App\Livewire\Cashier\PosCheckout`, `App\Livewire\Pos\Checkout`, sale actions |
 | Refund penuh | Available | `RefundSaleAction`, Sales table action; hanya `paid -> refunded`, role admin/owner/manager |
@@ -46,5 +46,5 @@ Payment tetap `pending` pada level sale sampai `sum(completed payments) == grand
 |---|---|---|
 | Admin | Filament back-office | `/admin` |
 | Cashier | Livewire operational workspace | `/cashier/*` |
-| Manager | Livewire dashboard, transaction monitoring, shift and cash reconciliation | `/manager`, `/manager/transactions`, `/manager/shifts`, `/manager/cash` |
+| Manager | Livewire dashboard, transaction, shift, cash, and product/stock monitoring | `/manager`, `/manager/transactions`, `/manager/shifts`, `/manager/cash`, `/manager/products` |
 | Owner | Livewire executive overview baseline | `/owner` |

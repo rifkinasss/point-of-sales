@@ -15,6 +15,8 @@ use App\Livewire\Manager\Transactions\Show as ManagerTransactionShow;
 use App\Livewire\Manager\Shifts\Index as ManagerShifts;
 use App\Livewire\Manager\Shifts\Show as ManagerShiftShow;
 use App\Livewire\Manager\Cash\Index as ManagerCash;
+use App\Livewire\Manager\Products\Index as ManagerProducts;
+use App\Livewire\Manager\Products\Show as ManagerProductShow;
 use App\Livewire\Owner\Dashboard as OwnerDashboard;
 use Illuminate\Support\Facades\Route;
 
@@ -38,6 +40,8 @@ Route::get('/manager/transactions/{sale:public_id}', ManagerTransactionShow::cla
 Route::get('/manager/shifts', ManagerShifts::class)->middleware('auth')->name('manager.shifts.index');
 Route::get('/manager/shifts/{shift:public_id}', ManagerShiftShow::class)->middleware('auth')->name('manager.shifts.show');
 Route::get('/manager/cash', ManagerCash::class)->middleware('auth')->name('manager.cash.index');
+Route::get('/manager/products', ManagerProducts::class)->middleware('auth')->name('manager.products.index');
+Route::get('/manager/products/{product:public_id}', ManagerProductShow::class)->middleware('auth')->name('manager.products.show');
 Route::get('/owner', OwnerDashboard::class)->middleware('auth')->name('owner.dashboard');
 Route::get('/auth/register', [RegistrationController::class, 'create'])->middleware('guest')->name('auth.register');
 Route::post('/auth/register', [RegistrationController::class, 'store'])->middleware('guest')->name('auth.register.store');

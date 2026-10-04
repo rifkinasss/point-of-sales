@@ -13,6 +13,7 @@
 - README sebelumnya menggambarkan layout `backend/`; source aktual berada langsung di root project.
 - Generated Filament panel cache sebelumnya memuat path lama; cache sudah dibersihkan pada Phase 0 melalui `php artisan optimize:clear`.
 - Manager inventory monitoring and reports remain deferred. Manager transaction monitoring, shift review, and cash reconciliation are now available as read-only Livewire modules.
+- Manager product and stock monitoring is available with store-scoped search/filter/detail views. Controlled stock adjustments are recorded through `AdjustStockAction`; full product CRUD remains Admin/Filament-only.
 - Cash reconciliation ledger selesai pada Phase 3 melalui `CashMovement`; koreksi histori tetap harus berupa movement baru, bukan edit/delete.
 - Payment sudah mendukung multi-payment per sale.
 - Partial return belum tersedia; status void tersedia untuk pending sale.
@@ -33,5 +34,6 @@
 - Refund cash pada shift yang sudah ditutup belum memiliki kebijakan operasional khusus; post-close refund governance tetap deferred.
 - Public identifier coverage is complete for current POS browser state (`Sale.public_id` plus ULIDs for product, category, customer, modifier, and cashier shift entities). `invoice_number` is a readable business reference only. Admin Filament and non-routed back-office foreign keys intentionally remain numeric; future public purchase, supplier, payment, and cash-movement APIs need their own identifiers before being exposed.
 - Branch master data is currently represented by optional `stores.branch_code`; a separate Branch aggregate and branch management workflow are deferred until the product needs multiple branches under one store tenant.
+- Product image upload, purchasing/supplier workflows, warehouse transfer, multi-warehouse support, forecasting, and automatic reorder remain deferred.
 
 Dokumen ini bukan desain target dan tidak mengubah business logic.

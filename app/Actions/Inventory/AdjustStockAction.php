@@ -4,6 +4,7 @@ namespace App\Actions\Inventory;
 
 use App\Enums\ProductType;
 use App\Enums\StockMovementType;
+use App\Enums\UserRole;
 use App\Models\Inventory;
 use App\Models\Product;
 use App\Models\StockMovement;
@@ -15,6 +16,12 @@ class AdjustStockAction
 {
     public function handle(Product $product, User $performedBy, StockMovementType $type, int $quantity, string $reason): StockMovement
     {
+        if ($performedBy->role !== UserRole::Admin && $product->store_id !== $performedBy->store_id) {
+            throw ValidationException::withMessages([
+                'product' => 'Produk tidak berada pada store aktif pengguna.',
+            ]);
+        }
+
         if ($product->product_type !== ProductType::Stockable) {
             throw ValidationException::withMessages([
                 'product' => 'Produk non-stok tidak memiliki persediaan.',
@@ -53,6 +60,7 @@ class AdjustStockAction
             $inventory->update(['quantity' => $after]);
 
             return StockMovement::query()->create([
+                'store_id' => $product->store_id,
                 'product_id' => $product->id,
                 'type' => $type,
                 'quantity_change' => $change,
