@@ -301,6 +301,65 @@ body.fi-panel-cashier:has(.pos-screen) .fi-page {
     box-shadow: 0 12px 22px rgb(79 70 229 / 0.25);
 }
 
+/* Operational controls share a small visual vocabulary across checkout, payment, and shift pages. */
+.fi-panel-cashier {
+    --pos-ink: #172033;
+    --pos-muted: #64748b;
+    --pos-focus: #4f46e5;
+    --pos-success: #047857;
+    --pos-warning: #b45309;
+}
+
+.fi-panel-cashier :is(button, a, input, select, textarea):focus-visible {
+    outline: 3px solid rgb(99 102 241 / 0.3);
+    outline-offset: 2px;
+}
+
+.fi-panel-cashier kbd {
+    border: 1px solid rgb(148 163 184 / 0.45);
+    border-bottom-width: 2px;
+    border-radius: 0.35rem;
+    background: rgb(255 255 255 / 0.8);
+    padding: 0.1rem 0.35rem;
+    color: #475569;
+    font-size: 0.68rem;
+    font-weight: 700;
+}
+
+.fi-panel-cashier .payment-workspace .fi-section,
+.fi-panel-cashier .pos-cart-panel {
+    border-radius: 1rem;
+}
+
+.fi-panel-cashier .payment-workspace .fi-section-header {
+    border-bottom-color: rgb(226 232 240 / 0.8);
+}
+
+.fi-panel-cashier .payment-workspace .fi-section-content {
+    padding: 1.25rem;
+}
+
+.fi-panel-cashier .pos-product-card,
+.fi-panel-cashier .pos-cart-panel,
+.fi-panel-cashier .payment-workspace .fi-section {
+    transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+
+.fi-panel-cashier .pos-product-card:focus-visible {
+    border-color: var(--pos-focus);
+    box-shadow: 0 0 0 3px rgb(99 102 241 / 0.2);
+}
+
+@media (max-width: 1279px) and (min-width: 640px) {
+    .fi-panel-cashier .pos-checkout-columns {
+        grid-template-columns: minmax(0, 1fr) minmax(19rem, 0.65fr);
+    }
+
+    .fi-panel-cashier .pos-product-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
 .dark .fi-panel-cashier .pos-product-search {
     background: rgb(30 41 59 / 0.9);
     box-shadow: none;

@@ -4,6 +4,7 @@ namespace App\Providers\Filament;
 
 use App\Http\Middleware\AuthenticateFilamentPanel;
 use App\Http\Middleware\EnsureCashierShiftWorkflow;
+use App\Filament\Cashier\Widgets\CashierShiftOverview;
 use CraftForge\FilamentLanguageSwitcher\FilamentLanguageSwitcherPlugin;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -62,6 +63,7 @@ class CashierPanelProvider extends PanelProvider
             ])
             ->discoverWidgets(in: app_path('Filament/Cashier/Widgets'), for: 'App\Filament\Cashier\Widgets')
             ->widgets([
+                CashierShiftOverview::class,
                 AccountWidget::class,
                 FilamentInfoWidget::class,
             ])

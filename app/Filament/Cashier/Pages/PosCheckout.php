@@ -122,6 +122,35 @@ class PosCheckout extends Page
         $this->selectedCategoryId = $categoryId;
     }
 
+    public function scanProduct(): void
+    {
+        $barcode = trim($this->search);
+
+        if ($barcode === '') {
+            return;
+        }
+
+        $product = Product::query()
+            ->with(['inventory', 'optionGroups.values'])
+            ->where('is_active', true)
+            ->where(fn ($query) => $query
+                ->where('barcode', $barcode)
+                ->orWhere('sku', $barcode))
+            ->first();
+
+        if (! $product) {
+            Notification::make()
+                ->warning()
+                ->title('Produk tidak ditemukan')
+                ->body('Periksa barcode atau gunakan nama produk untuk mencari.')
+                ->send();
+
+            return;
+        }
+
+        $this->addProduct($product->id);
+    }
+
     public function addProduct(int $productId): void
     {
         $product = Product::query()->with(['inventory', 'optionGroups.values'])->where('is_active', true)->find($productId);

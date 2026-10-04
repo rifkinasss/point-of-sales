@@ -1,6 +1,6 @@
 <x-filament-panels::page>
     @if ($sale)
-        <div class="mx-auto grid max-w-4xl gap-6 lg:grid-cols-2">
+        <div class="payment-workspace mx-auto grid max-w-5xl gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,0.9fr)]">
             <x-filament::section>
                 <x-slot name="heading">{{ $sale->invoice_number }}</x-slot>
 
@@ -21,6 +21,16 @@
                     <span>Sisa pembayaran</span>
                     <span>Rp {{ number_format($this->remainingDue(), 0, ',', '.') }}</span>
                 </div>
+                @if ($sale->payments->isNotEmpty())
+                    <div class="mt-5 border-t border-gray-200 pt-4 dark:border-white/10">
+                        <p class="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500">Pembayaran tercatat</p>
+                        <div class="space-y-2 text-sm">
+                            @foreach ($sale->payments as $payment)
+                                <div class="flex justify-between gap-3"><span>{{ str_replace('_', ' ', ucfirst($payment->method->value)) }}</span><span class="font-semibold">Rp {{ number_format($payment->amount_due, 0, ',', '.') }}</span></div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
             </x-filament::section>
 
             <x-filament::section>
@@ -74,6 +84,16 @@
                         <x-filament::input.wrapper prefix="Rp">
                             <x-filament::input id="amount-to-pay" min="1" type="number" wire:model="amountToPay" />
                         </x-filament::input.wrapper>
+                        <div class="mt-2 flex flex-wrap gap-2">
+                            <x-filament::button color="gray" size="sm" type="button" wire:click="$set('amountToPay', {{ $this->remainingDue() }})">Bayar sisa</x-filament::button>
+                            @if ($method === 'cash')
+                                @foreach ([$this->remainingDue(), 50000, 100000] as $quickAmount)
+                                    @if ($quickAmount > 0)
+                                        <x-filament::button color="gray" size="sm" type="button" wire:click="$set('amountReceived', {{ $quickAmount }})">Rp {{ number_format($quickAmount, 0, ',', '.') }}</x-filament::button>
+                                    @endif
+                                @endforeach
+                            @endif
+                        </div>
                     </div>
 
                     @if ($method === 'cash')

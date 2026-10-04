@@ -2,10 +2,13 @@
 
 namespace App\Filament\Cashier\Pages;
 
+use App\Actions\Cash\CreateCashInAction;
+use App\Actions\Cash\CreateCashOutAction;
 use App\Actions\Shift\CloseShiftAction;
 use App\Enums\ShiftStatus;
 use App\Models\CashierShift;
 use App\Models\User;
+use App\Services\CashBalanceCalculator;
 use BackedEnum;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Textarea;
@@ -34,6 +37,12 @@ class CloseShift extends Page implements HasForms
     public ?array $data = [];
 
     public ?CashierShift $shift = null;
+
+    public string $movementType = 'cash_in';
+
+    public int $movementAmount = 0;
+
+    public string $movementNote = '';
 
     public function mount(): void
     {
@@ -87,6 +96,43 @@ class CloseShift extends Page implements HasForms
         session()->put('cashier.shift_closed_at', now()->toIso8601String());
 
         $this->redirect('/cashier/open-shift');
+    }
+
+    /** @return array{opening: int, sales: int, cashIn: int, refunds: int, cashOut: int, expected: int} */
+    public function getCashSummaryProperty(): array
+    {
+        return $this->shift
+            ? app(CashBalanceCalculator::class)->summary($this->shift)
+            : ['opening' => 0, 'sales' => 0, 'cashIn' => 0, 'refunds' => 0, 'cashOut' => 0, 'expected' => 0];
+    }
+
+    public function recordCashMovement(): void
+    {
+        if (! $this->shift) {
+            Notification::make()->danger()->title('Tidak ada shift aktif.')->send();
+
+            return;
+        }
+
+        $data = $this->validate([
+            'movementType' => ['required', 'in:cash_in,cash_out'],
+            'movementAmount' => ['required', 'integer', 'min:1'],
+            'movementNote' => ['required', 'string', 'max:255'],
+        ]);
+
+        $action = $data['movementType'] === 'cash_in'
+            ? CreateCashInAction::class
+            : CreateCashOutAction::class;
+
+        app($action)->handle(
+            $this->shift,
+            $this->currentUser(),
+            (int) $data['movementAmount'],
+            $data['movementNote'],
+        );
+
+        $this->reset(['movementAmount', 'movementNote']);
+        Notification::make()->success()->title('Pergerakan kas dicatat.')->send();
     }
 
     private function currentUser(): User

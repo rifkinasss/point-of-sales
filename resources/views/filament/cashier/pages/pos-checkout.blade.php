@@ -1,5 +1,5 @@
 <x-filament-panels::page>
-    <div class="pos-screen pos-checkout-workspace">
+    <div class="pos-screen pos-checkout-workspace" x-data x-on:keydown.window="if (event.key === 'F2') { event.preventDefault(); $refs.productSearch.focus() } if (event.key === 'F4') { event.preventDefault(); $refs.customerSearch.focus() } if (event.key === 'F6') { event.preventDefault(); $refs.transactionDiscount.focus() } if (event.key === 'F8') { event.preventDefault(); $refs.payButton.click() }">
         <header class="pos-workstation-header">
             <div class="flex min-w-0 items-center gap-3">
                 <span class="grid size-11 shrink-0 place-items-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-500/25"><x-filament::icon icon="heroicon-o-shopping-bag" class="size-6" /></span>
@@ -19,11 +19,15 @@
 
             <x-filament::input.wrapper class="pos-product-search">
                 <x-filament::input
+                    x-ref="productSearch"
+                    id="pos-product-search"
                     wire:model.live.debounce.300ms="search"
+                    wire:keydown.enter.prevent="scanProduct"
                     placeholder="Cari atau scan barcode produk"
                     type="search"
                 />
             </x-filament::input.wrapper>
+            <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500"><span>Enter untuk barcode</span><span><kbd>F2</kbd> cari produk</span><span><kbd>F4</kbd> pelanggan</span><span><kbd>F8</kbd> bayar</span></div>
 
             <div class="mt-4 flex gap-2 overflow-x-auto pb-2">
                 <button class="shrink-0 rounded-full border px-4 py-2 text-sm font-semibold transition {{ $selectedCategoryId === null ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm' : 'border-gray-200 bg-white text-gray-600 hover:border-indigo-300 hover:text-indigo-700 dark:border-white/10 dark:bg-white/5 dark:text-gray-300' }}" type="button" wire:click="selectCategory">Semua</button>
@@ -49,7 +53,7 @@
                 @if ($selectedCustomer = $this->selectedCustomer)
                     <div class="flex items-center justify-between gap-3 rounded-xl border border-indigo-100 bg-indigo-50 p-3 dark:border-indigo-400/20 dark:bg-indigo-500/10"><div class="min-w-0"><p class="truncate text-sm font-bold">{{ $selectedCustomer->name }}</p><p class="text-xs text-indigo-700 dark:text-indigo-300">{{ $selectedCustomer->code }} · {{ $selectedCustomer->points }} poin</p></div><button class="text-xs font-bold text-danger-600 hover:underline" type="button" wire:click="clearCustomer">Ganti</button></div>
                 @else
-                    <div class="space-y-2"><x-filament::input.wrapper><x-filament::input wire:model.live.debounce.250ms="customerSearch" placeholder="Cari nama, telepon, atau kode member" type="search" /></x-filament::input.wrapper><div class="flex gap-2"><x-filament::input.wrapper class="min-w-0 flex-1"><x-filament::input wire:model="customerCardCode" wire:keydown.enter.prevent="scanCustomerCard" placeholder="Scan kartu member" /></x-filament::input.wrapper><x-filament::button color="gray" icon="heroicon-o-qr-code" type="button" wire:click="scanCustomerCard">Scan</x-filament::button></div></div>
+                    <div class="space-y-2"><x-filament::input.wrapper><x-filament::input x-ref="customerSearch" wire:model.live.debounce.250ms="customerSearch" placeholder="Cari nama, telepon, atau kode member" type="search" /></x-filament::input.wrapper><div class="flex gap-2"><x-filament::input.wrapper class="min-w-0 flex-1"><x-filament::input wire:model="customerCardCode" wire:keydown.enter.prevent="scanCustomerCard" placeholder="Scan kartu member" /></x-filament::input.wrapper><x-filament::button color="gray" icon="heroicon-o-qr-code" type="button" wire:click="scanCustomerCard">Scan</x-filament::button></div></div>
                     @if ($this->customerMatches->isNotEmpty())
                         <div class="mt-2 max-h-40 divide-y overflow-y-auto rounded-xl border border-gray-200 bg-white dark:border-white/10 dark:bg-gray-900">@foreach ($this->customerMatches as $customer)<button class="flex w-full items-center justify-between gap-3 p-3 text-left hover:bg-indigo-50 dark:hover:bg-indigo-500/10" type="button" wire:click="selectCustomer({{ $customer->id }})"><span><span class="block text-sm font-bold">{{ $customer->name }}</span><span class="block text-xs text-gray-500">{{ $customer->code }} @if($customer->phone) · {{ $customer->phone }} @endif</span></span><span class="text-xs font-bold text-amber-600">{{ $customer->points }} poin</span></button>@endforeach</div>
                     @elseif (mb_strlen($customerSearch) >= 2)
@@ -97,7 +101,7 @@
                 <div>
                     <label class="mb-1 block text-xs text-gray-500" for="transaction-discount">Diskon transaksi</label>
                     <x-filament::input.wrapper prefix="Rp">
-                        <x-filament::input id="transaction-discount" min="0" type="number" wire:model.live="manualTransactionDiscount" />
+                        <x-filament::input x-ref="transactionDiscount" id="transaction-discount" min="0" type="number" wire:model.live="manualTransactionDiscount" />
                     </x-filament::input.wrapper>
                 </div>
                 <div>
@@ -120,9 +124,10 @@
                 <span>Rp {{ number_format($this->grandTotal, 0, ',', '.') }}</span>
             </div>
 
-            <x-filament::button class="pos-pay-button mt-4 w-full" size="lg" wire:click="createPendingSale" :disabled="count($cart) === 0">
+            <x-filament::button x-ref="payButton" class="pos-pay-button mt-4 w-full" size="lg" wire:click="createPendingSale" :disabled="count($cart) === 0">
                 <x-filament::icon icon="heroicon-o-credit-card" class="mr-2 size-5" /> Lanjut ke pembayaran
             </x-filament::button>
+            <div wire:loading.flex wire:target="createPendingSale,addProduct,scanProduct" class="mt-3 items-center justify-center gap-2 text-xs font-semibold text-indigo-600"><span class="size-2 animate-pulse rounded-full bg-indigo-600"></span>Memproses transaksi…</div>
         </x-filament::section>
         </div>
     </div>
