@@ -24,6 +24,9 @@
 .nl-page { background: var(--nl-background); color: var(--nl-foreground); }
 .nl-surface { border: 1px solid var(--nl-border); border-radius: 0.5rem; background: var(--nl-surface); box-shadow: none; }
 .nl-focus:focus-visible { outline: 3px solid rgb(59 82 226 / 0.28); outline-offset: 2px; }
+.pos-modal-overlay { background: rgb(15 23 42 / 0.4); }
+.pos-modal-surface { border-radius: 0.75rem; box-shadow: 0 20px 45px rgb(15 23 42 / 0.14); }
+.pos-modal-close { flex-shrink: 0; }
 [x-cloak] { display: none !important; }
 .dark .nl-page { background: #0f172a; color: #f8fafc; }
 .dark .nl-surface { border-color: rgb(226 232 240 / 0.14); background: #0f172a; }
