@@ -10,6 +10,7 @@ use App\Models\Payment;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\User;
+use App\Services\ActiveStoreContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 
@@ -23,7 +24,7 @@ class ManagerDashboardQuery
         $start = $today->startOfDay()->utc();
         $end = $today->endOfDay()->utc();
         $paidSales = Sale::query()->withoutGlobalScopes()
-            ->where('store_id', $manager->store_id)
+            ->whereIn('store_id', $this->storeIds($manager))
             ->where('status', SaleStatus::Paid)
             ->whereBetween('completed_at', [$start, $end]);
 
@@ -36,14 +37,14 @@ class ManagerDashboardQuery
         $refund = (int) Payment::query()->withoutGlobalScopes()
             ->where('status', \App\Enums\PaymentStatus::Refunded)
             ->whereBetween('refunded_at', [$start, $end])
-            ->whereHas('sale', fn ($query) => $query->withoutGlobalScopes()->where('store_id', $manager->store_id))
+            ->whereHas('sale', fn ($query) => $query->withoutGlobalScopes()->whereIn('store_id', $this->storeIds($manager)))
             ->sum('amount_due');
         $netSales = max(0, $grandTotal - $refund);
 
         $payments = Payment::query()->withoutGlobalScopes()
             ->where('status', \App\Enums\PaymentStatus::Completed)
             ->whereBetween('paid_at', [$start, $end])
-            ->whereHas('sale', fn ($query) => $query->withoutGlobalScopes()->where('store_id', $manager->store_id))
+            ->whereHas('sale', fn ($query) => $query->withoutGlobalScopes()->whereIn('store_id', $this->storeIds($manager)))
             ->get(['method', 'amount_due']);
         $paymentBreakdown = $payments->groupBy(fn (Payment $payment): string => $payment->method->value)
             ->map(fn (Collection $rows): int => (int) $rows->sum('amount_due'))
@@ -51,7 +52,7 @@ class ManagerDashboardQuery
 
         $activeShifts = CashierShift::query()->withoutGlobalScopes()
             ->with(['cashier', 'cashMovements'])
-            ->where('store_id', $manager->store_id)
+            ->whereIn('store_id', $this->storeIds($manager))
             ->where('status', ShiftStatus::Open)
             ->latest('opened_at')
             ->get()
@@ -67,14 +68,14 @@ class ManagerDashboardQuery
             'averageTransaction' => $transactionCount > 0 ? intdiv($netSales, $transactionCount) : 0,
             'cashSales' => $paymentBreakdown['cash'] ?? 0,
             'openShifts' => $activeShifts->count(),
-            'lowStock' => Product::query()->withoutGlobalScopes()->where('store_id', $manager->store_id)
+            'lowStock' => Product::query()->withoutGlobalScopes()->whereIn('store_id', $this->storeIds($manager))
                 ->where('is_active', true)
                 ->whereHas('inventory', fn ($query) => $query->whereColumn('quantity', '<=', 'products.minimum_stock'))->count(),
             'paymentBreakdown' => $paymentBreakdown,
             'activeShifts' => $activeShifts,
             'cashActivity' => $this->cashActivity($manager, $start, $end),
             'lowStockProducts' => Product::query()->withoutGlobalScopes()->with(['inventory', 'category'])
-                ->where('store_id', $manager->store_id)->where('is_active', true)
+                ->whereIn('store_id', $this->storeIds($manager))->where('is_active', true)
                 ->whereHas('inventory', fn ($query) => $query->whereColumn('quantity', '<=', 'products.minimum_stock'))
                 ->orderBy('name')->limit(5)->get(),
             'recentSales' => $this->recentSales($manager),
@@ -97,7 +98,7 @@ class ManagerDashboardQuery
     public function recentSales(User $manager): Collection
     {
         return Sale::query()->withoutGlobalScopes()->with(['cashier', 'customer', 'payments'])
-            ->where('store_id', $manager->store_id)
+            ->whereIn('store_id', $this->storeIds($manager))
             ->latest('created_at')->limit(8)->get();
     }
 
@@ -105,7 +106,7 @@ class ManagerDashboardQuery
     private function cashActivity(User $manager, CarbonImmutable $start, CarbonImmutable $end): array
     {
         $movements = CashMovement::query()->withoutGlobalScopes()
-            ->where('store_id', $manager->store_id)
+            ->whereIn('store_id', $this->storeIds($manager))
             ->whereBetween('created_at', [$start, $end])
             ->get()->groupBy(fn (CashMovement $movement): string => $movement->type->value);
         $opening = (int) ($movements->get('opening')?->sum('amount') ?? 0);
@@ -140,5 +141,11 @@ class ManagerDashboardQuery
             'refunds' => $refunds,
             'expected' => $opening + $sales + $cashIn - $cashOut - $refunds,
         ];
+    }
+
+    /** @return array<int, int> */
+    private function storeIds(User $manager): array
+    {
+        return app(ActiveStoreContext::class)->scope($manager)->ids();
     }
 }

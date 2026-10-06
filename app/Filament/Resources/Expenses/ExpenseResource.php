@@ -22,6 +22,7 @@ use UnitEnum;
 
 class ExpenseResource extends Resource
 {
+    public static function canViewAny(): bool { return false; }
     protected static ?string $model = Expense::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBanknotes;

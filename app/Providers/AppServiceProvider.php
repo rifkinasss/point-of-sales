@@ -37,7 +37,8 @@ class AppServiceProvider extends ServiceProvider
             $auditable::created(fn ($model) => app(AuditLogger::class)->log('created', $model, [], $this->safeAuditValues($model->getAttributes())));
             $auditable::updated(function ($model): void {
                 $changes = collect($model->getChanges())->except(['updated_at'])->all();
-                if ($changes !== []) app(AuditLogger::class)->log('updated', $model, [], $this->safeAuditValues($changes));
+                $old = collect($model->getOriginal())->only(array_keys($changes))->all();
+                if ($changes !== []) app(AuditLogger::class)->log('updated', $model, $this->safeAuditValues($old), $this->safeAuditValues($changes));
             });
             $auditable::deleted(fn ($model) => app(AuditLogger::class)->log('deleted', $model));
         }

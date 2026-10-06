@@ -3,14 +3,15 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToCurrentStore;
+use App\Models\Concerns\HasPublicId;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Unit extends Model
 {
-    use BelongsToCurrentStore;
+    use BelongsToCurrentStore, HasPublicId;
 
-    protected $fillable = ['store_id', 'name', 'symbol', 'is_active'];
+    protected $fillable = ['store_id', 'public_id', 'name', 'symbol', 'is_active'];
 
     protected function casts(): array
     {

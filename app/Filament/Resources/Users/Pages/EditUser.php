@@ -2,12 +2,12 @@
 
 namespace App\Filament\Resources\Users\Pages;
 
-use App\Enums\UserRole;
+use App\Actions\Admin\ManageUserAccessAction;
 use App\Filament\Resources\Users\UserResource;
 use App\Models\User;
 use Filament\Facades\Filament;
 use Filament\Resources\Pages\EditRecord;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Database\Eloquent\Model;
 
 class EditUser extends EditRecord
 {
@@ -18,20 +18,26 @@ class EditUser extends EditRecord
         return [];
     }
 
-    protected function mutateFormDataBeforeSave(array $data): array
+    protected function mutateFormDataBeforeFill(array $data): array
     {
-        $currentUser = Filament::auth()->user();
-
-        if (! $currentUser instanceof User || ! array_key_exists($data['role'], UserRole::assignableOptionsFor($currentUser->role))) {
-            throw ValidationException::withMessages([
-                'data.role' => 'Anda tidak memiliki izin untuk menetapkan role tersebut.',
-            ]);
+        $record = $this->getRecord();
+        if ($record instanceof User) {
+            $data['store_public_ids'] = $record->role?->value === 'manager'
+                ? $record->managedStores()->pluck('stores.public_id')->all()
+                : [];
+            $data['store_public_id'] = $record->store?->public_id;
         }
-
-        if ($currentUser->role === UserRole::Owner) {
-            $data['store_id'] = $currentUser->store_id;
-        }
-
         return $data;
+    }
+
+    protected function handleRecordUpdate(Model $record, array $data): Model
+    {
+        $admin = Filament::auth()->user();
+        abort_unless($admin instanceof User && $record instanceof User, 403);
+        $storePublicIds = $data['role'] === 'manager'
+            ? ($data['store_public_ids'] ?? [])
+            : array_filter([(string) ($data['store_public_id'] ?? '')]);
+
+        return app(ManageUserAccessAction::class)->update($admin, $record, $data, $storePublicIds);
     }
 }

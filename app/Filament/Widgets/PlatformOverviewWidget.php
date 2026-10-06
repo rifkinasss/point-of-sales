@@ -2,9 +2,12 @@
 
 namespace App\Filament\Widgets;
 
-use App\Enums\SaleStatus;
+use App\Enums\PaymentStatus;
+use App\Enums\ShiftStatus;
+use App\Enums\StoreStatus;
 use App\Enums\UserRole;
-use App\Models\Sale;
+use App\Models\CashierShift;
+use App\Models\Payment;
 use App\Models\Store;
 use App\Models\User;
 use Filament\Widgets\StatsOverviewWidget;
@@ -21,32 +24,27 @@ class PlatformOverviewWidget extends StatsOverviewWidget
 
     protected function getStats(): array
     {
-        $monthStart = now()->startOfMonth();
-        $storeCount = Store::query()->count();
-        $newStores = Store::query()->where('created_at', '>=', $monthStart)->count();
-        $staffCount = User::query()->whereIn('role', [UserRole::Owner, UserRole::Manager, UserRole::Cashier])->where('is_active', true)->count();
-        $monthlyRevenue = (int) Sale::query()
-            ->where('status', SaleStatus::Paid)
-            ->where('completed_at', '>=', $monthStart)
-            ->sum('grand_total');
+        $storeCount = Store::query()->where('status', StoreStatus::Active)->count();
+        $activeUsers = User::query()->where('is_active', true)->count();
+        $activeShifts = CashierShift::query()->where('status', ShiftStatus::Open)->count();
+        $pendingPayments = Payment::query()->where('status', PaymentStatus::Pending)->count();
 
         return [
             Stat::make('Toko aktif', number_format($storeCount))
-                ->description($newStores.' toko baru bulan ini')
-                ->descriptionIcon('heroicon-m-arrow-trending-up')
+                ->description('Store yang siap beroperasi')
                 ->icon('heroicon-o-building-storefront')
                 ->color('primary'),
-            Stat::make('Staf aktif', number_format($staffCount))
-                ->description('Owner, manager, dan kasir')
+            Stat::make('Pengguna aktif', number_format($activeUsers))
+                ->description('Semua akun yang dapat masuk')
                 ->icon('heroicon-o-user-group')
                 ->color('info'),
-            Stat::make('Omzet platform bulan ini', 'Rp '.number_format($monthlyRevenue, 0, ',', '.'))
-                ->description('Akumulasi transaksi lunas')
-                ->icon('heroicon-o-chart-bar')
+            Stat::make('Shift aktif', number_format($activeShifts))
+                ->description('Kasir yang sedang bertugas')
+                ->icon('heroicon-o-clock')
                 ->color('success'),
-            Stat::make('Paket berbayar', number_format(Store::query()->where('plan', '!=', 'free')->count()))
-                ->description('Toko di luar paket Free')
-                ->icon('heroicon-o-sparkles')
+            Stat::make('Pembayaran tertunda', number_format($pendingPayments))
+                ->description('Memerlukan perhatian')
+                ->icon('heroicon-o-credit-card')
                 ->color('warning'),
         ];
     }

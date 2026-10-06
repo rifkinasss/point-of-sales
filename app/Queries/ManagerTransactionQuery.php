@@ -6,6 +6,7 @@ use App\Enums\PaymentStatus;
 use App\Enums\SaleStatus;
 use App\Models\Sale;
 use App\Models\User;
+use App\Services\ActiveStoreContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
@@ -16,7 +17,7 @@ class ManagerTransactionQuery
         [$start, $end] = $this->dateRange($manager, $filters);
         $query = Sale::query()->withoutGlobalScopes()
             ->with(['cashier', 'customer', 'payments'])
-            ->where('store_id', $manager->store_id)
+            ->whereIn('store_id', $this->storeIds($manager))
             ->whereBetween('created_at', [$start, $end]);
 
         if (filled($filters['search'] ?? null)) {
@@ -44,7 +45,7 @@ class ManagerTransactionQuery
     {
         return Sale::query()->withoutGlobalScopes()
             ->with(['items', 'payments', 'cashier', 'customer', 'store', 'cashierShift'])
-            ->where('store_id', $manager->store_id)
+            ->whereIn('store_id', $this->storeIds($manager))
             ->where('public_id', $publicId)
             ->first();
     }
@@ -78,5 +79,11 @@ class ManagerTransactionQuery
         }
 
         return [$today->startOfDay()->utc(), $today->endOfDay()->utc()];
+    }
+
+    /** @return array<int, int> */
+    private function storeIds(User $manager): array
+    {
+        return app(ActiveStoreContext::class)->scope($manager)->ids();
     }
 }

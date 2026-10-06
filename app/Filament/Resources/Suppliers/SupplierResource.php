@@ -21,6 +21,7 @@ use UnitEnum;
 
 class SupplierResource extends Resource
 {
+    public static function canViewAny(): bool { return false; }
     protected static ?string $model = Supplier::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTruck;

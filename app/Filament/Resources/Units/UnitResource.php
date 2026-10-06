@@ -17,6 +17,7 @@ use UnitEnum;
 
 class UnitResource extends Resource
 {
+    public static function canViewAny(): bool { return false; }
     protected static ?string $model = Unit::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedScale;

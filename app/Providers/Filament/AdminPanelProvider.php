@@ -3,6 +3,9 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Resources\Security\UserSessionResource;
+use App\Filament\Widgets\PlatformOverviewWidget;
+use App\Filament\Widgets\SecurityOverviewWidget;
+use App\Filament\Widgets\StorePerformanceWidget;
 use App\Http\Middleware\AuthenticateFilamentPanel;
 use Asharif88\FilamentPlotly\FilamentPlotlyPlugin;
 use CraftForge\FilamentLanguageSwitcher\FilamentLanguageSwitcherPlugin;
@@ -13,7 +16,6 @@ use Filament\Navigation\NavigationGroup;
 use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
-use Filament\Support\Colors\Color;
 use Furic\FilamentRedeemCodes\FilamentRedeemCodesPlugin;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -38,10 +40,7 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->viteTheme('resources/css/filament/theme.css')
-            ->brandName('NasLabs ERP — Admin')
-            ->colors([
-                'primary' => Color::Indigo,
-            ])
+            ->brandName('NasLabs ERP Admin')
             ->sidebarWidth('17rem')
             ->plugin(AppVersionPlugin::make()->badge()->neutral())
             ->plugin(
@@ -74,19 +73,17 @@ class AdminPanelProvider extends PanelProvider
             ->pages([
                 Dashboard::class,
             ])
-            ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->navigationGroups([
-                NavigationGroup::make('Laporan'),
-                NavigationGroup::make('Operasional'),
-                NavigationGroup::make('Pembelian'),
-                NavigationGroup::make('Inventori'),
-                NavigationGroup::make('Katalog'),
-                NavigationGroup::make('Keuangan'),
-                NavigationGroup::make('Promosi'),
-                NavigationGroup::make('Keamanan'),
-                NavigationGroup::make('Pengaturan'),
+                NavigationGroup::make('Overview'),
+                NavigationGroup::make('Platform'),
+                NavigationGroup::make('Operations'),
+                NavigationGroup::make('Security & Audit'),
+                NavigationGroup::make('System'),
             ])
             ->widgets([
+                PlatformOverviewWidget::class,
+                SecurityOverviewWidget::class,
+                StorePerformanceWidget::class,
                 OnlineSessionsWidget::class,
             ])
             ->middleware([

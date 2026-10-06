@@ -5,6 +5,7 @@ namespace App\Livewire\Manager\Reports;
 use App\Enums\UserRole;
 use App\Models\User;
 use App\Queries\ManagerReportQuery;
+use App\Services\ActiveStoreContext;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
@@ -67,7 +68,7 @@ class Index extends Component
 
         return view('livewire.manager.reports.index', [
             'data' => $query->report($manager, $this->report, $this->filters()),
-            'cashiers' => User::query()->where('store_id', $manager->store_id)->where('role', UserRole::Cashier)->orderBy('name')->get(['name']),
+            'cashiers' => User::query()->whereIn('store_id', app(ActiveStoreContext::class)->scope($manager)->ids())->where('role', UserRole::Cashier)->orderBy('name')->get(['name']),
         ])->layout('components.layouts.manager', ['title' => $this->report === 'overview' ? 'Laporan' : ($query->report($manager, $this->report, $this->filters())['title'] ?? 'Laporan'), 'activeNav' => 'reports']);
     }
 

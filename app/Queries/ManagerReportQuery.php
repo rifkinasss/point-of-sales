@@ -13,6 +13,7 @@ use App\Models\SaleItem;
 use App\Models\StockMovement;
 use App\Models\User;
 use App\Services\CashBalanceCalculator;
+use App\Services\ActiveStoreContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -108,11 +109,11 @@ class ManagerReportQuery
     private function sales(User $manager, array $filters): array
     {
         $period = $this->period($manager, $filters);
-        $base = Sale::query()->withoutGlobalScopes()->where('sales.store_id', $manager->store_id)
+        $base = Sale::query()->withoutGlobalScopes()->whereIn('sales.store_id', $this->storeIds($manager))
             ->whereBetween('completed_at', [$period['start'], $period['end']])->whereIn('status', [SaleStatus::Paid, SaleStatus::Refunded]);
         $this->applyCashierSearch($base, $filters);
         $summary = (clone $base)->selectRaw('COUNT(*) as transactions, COALESCE(SUM(subtotal), 0) as gross, COALESCE(SUM(item_discount_total + promotion_discount_total + transaction_discount_total), 0) as discount, COALESCE(SUM(grand_total), 0) as total')->first();
-        $refund = Payment::query()->withoutGlobalScopes()->where('status', PaymentStatus::Refunded)->whereBetween('refunded_at', [$period['start'], $period['end']])->whereHas('sale', fn ($sale) => $sale->withoutGlobalScopes()->where('store_id', $manager->store_id))->sum('amount_due');
+        $refund = Payment::query()->withoutGlobalScopes()->where('status', PaymentStatus::Refunded)->whereBetween('refunded_at', [$period['start'], $period['end']])->whereHas('sale', fn ($sale) => $sale->withoutGlobalScopes()->whereIn('store_id', $this->storeIds($manager)))->sum('amount_due');
         $rows = (clone $base)->with(['cashier', 'customer'])->addSelect(['refund_amount' => Payment::query()->selectRaw('COALESCE(SUM(amount_due), 0)')->whereColumn('sale_id', 'sales.id')->where('status', PaymentStatus::Refunded)])->latest('completed_at')->get()->map(function (Sale $sale): array {
             $discount = $sale->item_discount_total + $sale->promotion_discount_total + $sale->transaction_discount_total;
 
@@ -126,7 +127,7 @@ class ManagerReportQuery
     private function payments(User $manager, array $filters): array
     {
         $period = $this->period($manager, $filters);
-        $base = Payment::query()->withoutGlobalScopes()->whereBetween('payments.created_at', [$period['start'], $period['end']])->whereHas('sale', fn ($sale) => $sale->withoutGlobalScopes()->where('store_id', $manager->store_id));
+        $base = Payment::query()->withoutGlobalScopes()->whereBetween('payments.created_at', [$period['start'], $period['end']])->whereHas('sale', fn ($sale) => $sale->withoutGlobalScopes()->whereIn('store_id', $this->storeIds($manager)));
         $statusTotals = (clone $base)->select('status')->selectRaw('COUNT(*) as count, COALESCE(SUM(amount_due), 0) as amount')->groupBy('status')->get()->keyBy('status');
         $breakdown = (clone $base)->where('status', PaymentStatus::Completed)->select('method')->selectRaw('COUNT(*) as count, COALESCE(SUM(amount_due), 0) as amount')->groupBy('method')->get();
         $total = (int) $breakdown->sum('amount');
@@ -139,7 +140,7 @@ class ManagerReportQuery
     private function shifts(User $manager, array $filters): array
     {
         $period = $this->period($manager, $filters);
-        $shifts = CashierShift::query()->withoutGlobalScopes()->with('cashier')->where('store_id', $manager->store_id)->whereBetween('opened_at', [$period['start'], $period['end']])->latest('opened_at')->get();
+        $shifts = CashierShift::query()->withoutGlobalScopes()->with('cashier')->whereIn('store_id', $this->storeIds($manager))->whereBetween('opened_at', [$period['start'], $period['end']])->latest('opened_at')->get();
         $summaries = $this->cashCalculator->summaries($shifts);
         $rows = $shifts->map(function (CashierShift $shift) use ($summaries): array {
             $summary = $summaries->get($shift->id, []);
@@ -156,11 +157,11 @@ class ManagerReportQuery
     private function cash(User $manager, array $filters): array
     {
         $period = $this->period($manager, $filters);
-        $movementTotals = CashMovement::query()->withoutGlobalScopes()->where('store_id', $manager->store_id)->whereBetween('created_at', [$period['start'], $period['end']])->select('type')->selectRaw('COALESCE(SUM(amount), 0) as amount')->groupBy('type')->pluck('amount', 'type');
+        $movementTotals = CashMovement::query()->withoutGlobalScopes()->whereIn('store_id', $this->storeIds($manager))->whereBetween('created_at', [$period['start'], $period['end']])->select('type')->selectRaw('COALESCE(SUM(amount), 0) as amount')->groupBy('type')->pluck('amount', 'type');
         $opening = (int) ($movementTotals->get('opening') ?? 0); $sales = (int) ($movementTotals->get('sale') ?? 0); $cashIn = (int) ($movementTotals->get('cash_in') ?? 0); $refunds = (int) ($movementTotals->get('refund') ?? 0); $cashOut = (int) ($movementTotals->get('cash_out') ?? 0);
-        $closed = CashierShift::query()->withoutGlobalScopes()->where('store_id', $manager->store_id)->whereNotNull('closed_at')->whereBetween('closed_at', [$period['start'], $period['end']])->selectRaw('COALESCE(SUM(closing_cash_actual), 0) as actual, COALESCE(SUM(cash_difference), 0) as variance')->first();
+        $closed = CashierShift::query()->withoutGlobalScopes()->whereIn('store_id', $this->storeIds($manager))->whereNotNull('closed_at')->whereBetween('closed_at', [$period['start'], $period['end']])->selectRaw('COALESCE(SUM(closing_cash_actual), 0) as actual, COALESCE(SUM(cash_difference), 0) as variance')->first();
         $expected = $this->cashCalculator->expectedFromParts($opening, $sales, $cashIn, $refunds, $cashOut);
-        $rows = CashierShift::query()->withoutGlobalScopes()->with('cashier')->where('store_id', $manager->store_id)->whereNotNull('closed_at')->whereBetween('closed_at', [$period['start'], $period['end']])->latest('closed_at')->get()->map(function (CashierShift $shift): array { $summary = $this->cashCalculator->summary($shift); return ['cashier' => $shift->cashier?->name ?? '-', 'closed' => $shift->closed_at, 'expected' => $summary['expected'], 'actual' => (int) $shift->closing_cash_actual, 'variance' => (int) $shift->cash_difference, 'status' => (int) $shift->cash_difference === 0 ? 'sesuai' : ((int) $shift->cash_difference < 0 ? 'kurang' : 'lebih'), 'public_id' => $shift->public_id]; })->all();
+        $rows = CashierShift::query()->withoutGlobalScopes()->with('cashier')->whereIn('store_id', $this->storeIds($manager))->whereNotNull('closed_at')->whereBetween('closed_at', [$period['start'], $period['end']])->latest('closed_at')->get()->map(function (CashierShift $shift): array { $summary = $this->cashCalculator->summary($shift); return ['cashier' => $shift->cashier?->name ?? '-', 'closed' => $shift->closed_at, 'expected' => $summary['expected'], 'actual' => (int) $shift->closing_cash_actual, 'variance' => (int) $shift->cash_difference, 'status' => (int) $shift->cash_difference === 0 ? 'sesuai' : ((int) $shift->cash_difference < 0 ? 'kurang' : 'lebih'), 'public_id' => $shift->public_id]; })->all();
 
         return ['key' => 'cash', 'title' => 'Rekonsiliasi Kas', 'description' => 'Expected cash memakai CashBalanceCalculator. Actual hanya menjumlahkan shift yang sudah ditutup.', 'period' => $period, 'summary' => ['opening' => $opening, 'sales' => $sales, 'cashIn' => $cashIn, 'refunds' => $refunds, 'cashOut' => $cashOut, 'expected' => $expected, 'actual' => (int) ($closed?->actual ?? 0), 'variance' => (int) ($closed?->variance ?? 0)], 'columns' => ['cashier' => 'Kasir', 'closed' => 'Ditutup', 'expected' => 'Expected', 'actual' => 'Actual', 'variance' => 'Variance', 'status' => 'Status', 'public_id' => ''], 'rows' => $rows, 'printable' => true];
     }
@@ -169,7 +170,7 @@ class ManagerReportQuery
     private function products(User $manager, array $filters): array
     {
         $period = $this->period($manager, $filters);
-        $rows = SaleItem::query()->withoutGlobalScopes()->join('sales', 'sales.id', '=', 'sale_items.sale_id')->leftJoin('products', 'products.id', '=', 'sale_items.product_id')->leftJoin('categories', 'categories.id', '=', 'products.category_id')->where('sales.store_id', $manager->store_id)->where('sales.status', SaleStatus::Paid)->whereBetween('sales.completed_at', [$period['start'], $period['end']])->select('sale_items.product_name', 'sale_items.sku', 'categories.name as category')->selectRaw('SUM(sale_items.quantity) as quantity, SUM(sale_items.line_total) as revenue, SUM(sale_items.discount_amount) as discount, COUNT(DISTINCT sale_items.sale_id) as transactions')->groupBy('sale_items.product_name', 'sale_items.sku', 'categories.name')->orderByDesc('revenue')->get();
+        $rows = SaleItem::query()->withoutGlobalScopes()->join('sales', 'sales.id', '=', 'sale_items.sale_id')->leftJoin('products', 'products.id', '=', 'sale_items.product_id')->leftJoin('categories', 'categories.id', '=', 'products.category_id')->whereIn('sales.store_id', $this->storeIds($manager))->where('sales.status', SaleStatus::Paid)->whereBetween('sales.completed_at', [$period['start'], $period['end']])->select('sale_items.product_name', 'sale_items.sku', 'categories.name as category')->selectRaw('SUM(sale_items.quantity) as quantity, SUM(sale_items.line_total) as revenue, SUM(sale_items.discount_amount) as discount, COUNT(DISTINCT sale_items.sale_id) as transactions')->groupBy('sale_items.product_name', 'sale_items.sku', 'categories.name')->orderByDesc('revenue')->get();
         $sort = $filters['productSort'] ?? 'revenue';
         $rows = $sort === 'quantity' ? $rows->sortByDesc('quantity') : ($sort === 'lowest_quantity' ? $rows->sortBy('quantity') : $rows);
         $mapped = $rows->values()->map(fn ($row): array => ['product' => $row->product_name, 'sku' => $row->sku, 'category' => $row->category ?? 'Tidak tersedia pada snapshot', 'quantity' => (int) $row->quantity, 'revenue' => (int) $row->revenue, 'discount' => (int) $row->discount, 'transactions' => (int) $row->transactions])->all();
@@ -181,7 +182,7 @@ class ManagerReportQuery
     private function inventory(User $manager, array $filters): array
     {
         $period = $this->period($manager, $filters);
-        $movements = StockMovement::query()->withoutGlobalScopes()->with(['product', 'performedBy'])->where('store_id', $manager->store_id)->whereBetween('occurred_at', [$period['start'], $period['end']])->latest('occurred_at')->get();
+        $movements = StockMovement::query()->withoutGlobalScopes()->with(['product', 'performedBy'])->whereIn('store_id', $this->storeIds($manager))->whereBetween('occurred_at', [$period['start'], $period['end']])->latest('occurred_at')->get();
         $rows = $movements->map(fn (StockMovement $movement): array => ['date' => $movement->occurred_at, 'product' => $movement->product?->name ?? '-', 'sku' => $movement->product?->sku ?? '-', 'movement_type' => $movement->type->value, 'quantity' => (int) $movement->quantity_change, 'reference' => class_basename((string) $movement->reference_type), 'actor' => $movement->performedBy?->name ?? '-'])->all();
         $summary = $movements->groupBy(fn (StockMovement $movement): string => $movement->type->value)->map(fn (Collection $group): int => (int) $group->sum('quantity_change'));
 
@@ -194,5 +195,11 @@ class ManagerReportQuery
             $needle = '%'.mb_strtolower(trim((string) $filters['cashier'])).'%';
             $query->whereHas('cashier', fn ($cashier) => $cashier->whereRaw('LOWER(name) LIKE ?', [$needle]));
         }
+    }
+
+    /** @return array<int, int> */
+    private function storeIds(User $manager): array
+    {
+        return app(ActiveStoreContext::class)->scope($manager)->ids();
     }
 }

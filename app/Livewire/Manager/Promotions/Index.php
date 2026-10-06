@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Models\Promotion;
 use App\Models\User;
 use App\Queries\ManagerPromotionQuery;
+use App\Services\ActiveStoreContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
@@ -41,12 +42,13 @@ class Index extends Component
     public function saveCreate(): void
     {
         $manager = $this->authorizeManager();
+        $store = app(ActiveStoreContext::class)->requireSingleStore($manager);
         $data = $this->validate($this->formRules(), $this->messages());
         if (! $this->validateValue()) {
             return;
         }
         $productId = $this->resolveProductId($manager, $data['productPublicId'] ?? '');
-        Promotion::query()->create(['store_id' => $manager->store_id, 'product_id' => $productId, 'name' => trim($data['promotionName']), 'type' => $data['promotionType'], 'value' => (int) $data['promotionValue'], 'member_tier' => filled($data['memberTier']) ? $data['memberTier'] : null, 'starts_at' => $data['startsAt'] ?: null, 'ends_at' => $data['endsAt'] ?: null, 'is_active' => $data['isActive']]);
+        Promotion::query()->create(['store_id' => $store->getKey(), 'product_id' => $productId, 'name' => trim($data['promotionName']), 'type' => $data['promotionType'], 'value' => (int) $data['promotionValue'], 'member_tier' => filled($data['memberTier']) ? $data['memberTier'] : null, 'starts_at' => $data['startsAt'] ?: null, 'ends_at' => $data['endsAt'] ?: null, 'is_active' => $data['isActive']]);
         $this->closeCreate();
         session()->flash('status', 'Promo berhasil dibuat.');
     }

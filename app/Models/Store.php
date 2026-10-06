@@ -2,18 +2,24 @@
 
 namespace App\Models;
 
+use App\Enums\StoreStatus;
 use EduardoRibeiroDev\FilamentLeaflet\ValueObjects\Coordinate;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Str;
 
 class Store extends Model
 {
     protected $fillable = [
+        'public_id',
         'name',
         'slug',
         'store_code',
         'branch_code',
+        'branch_name',
+        'status',
         'plan',
         'product_limit',
         'staff_limit',
@@ -40,12 +46,17 @@ class Store extends Model
             'location' => Coordinate::class.':latitude,longitude',
             'product_limit' => 'integer',
             'staff_limit' => 'integer',
+            'status' => StoreStatus::class,
         ];
     }
 
     protected static function booted(): void
     {
         static::creating(function (self $store): void {
+            if (! filled($store->public_id)) {
+                $store->public_id = (string) Str::ulid();
+            }
+
             if (filled($store->store_code)) {
                 return;
             }
@@ -75,9 +86,19 @@ class Store extends Model
         $this->attributes['branch_code'] = filled($value) ? Str::upper(trim($value)) : null;
     }
 
+    public function isActive(): bool
+    {
+        return $this->status === StoreStatus::Active;
+    }
+
     public function users(): HasMany
     {
         return $this->hasMany(User::class);
+    }
+
+    public function managers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'store_memberships')->withPivot('is_default')->withTimestamps();
     }
 
     public function canAddProduct(): bool
@@ -100,9 +121,19 @@ class Store extends Model
         return $this->hasMany(Sale::class);
     }
 
+    public function cashierShifts(): HasMany
+    {
+        return $this->hasMany(CashierShift::class);
+    }
+
     public function subscriptions(): HasMany
     {
         return $this->hasMany(StoreSubscription::class);
+    }
+
+    public function latestSubscription(): HasOne
+    {
+        return $this->hasOne(StoreSubscription::class)->latestOfMany();
     }
 
     public function invoices(): HasMany

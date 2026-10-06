@@ -10,6 +10,7 @@ use App\Models\Product;
 use App\Models\StockMovement;
 use App\Models\User;
 use App\Queries\ManagerProductQuery;
+use App\Services\ActiveStoreContext;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -49,6 +50,7 @@ class Show extends Component
     public function saveAdjustment(): void
     {
         $manager = $this->authorizeManager();
+        app(ActiveStoreContext::class)->requireSingleStore($manager);
         $data = $this->validate([
             'adjustmentDirection' => ['required', Rule::in(['in', 'out'])],
             'adjustmentQuantity' => ['required', 'integer', 'min:1'],

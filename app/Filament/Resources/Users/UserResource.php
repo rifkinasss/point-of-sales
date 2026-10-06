@@ -25,7 +25,7 @@ class UserResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUsers;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Pengaturan';
+    protected static string|UnitEnum|null $navigationGroup = 'Platform';
 
     protected static ?string $navigationLabel = 'Pengguna';
 
@@ -63,16 +63,7 @@ class UserResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        $query = parent::getEloquentQuery()->where('role', '!=', UserRole::Admin->value);
-        $user = self::currentUser();
-
-        if ($user instanceof User && $user->role === UserRole::Owner) {
-            $query
-                ->where('store_id', $user->store_id)
-                ->whereIn('role', [UserRole::Manager->value, UserRole::Cashier->value]);
-        }
-
-        return $query;
+        return parent::getEloquentQuery()->with(['store', 'managedStores']);
     }
 
     public static function getRecordRouteBindingEloquentQuery(): Builder
@@ -82,22 +73,19 @@ class UserResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return self::currentUser()?->role->canAccessAdmin() && self::currentUser()?->role !== UserRole::Manager;
+        return self::currentUser()?->role === UserRole::Admin;
     }
 
     public static function canCreate(): bool
     {
-        return self::assignableOptions() !== [];
+        return self::currentUser()?->role === UserRole::Admin;
     }
 
     public static function canEdit(Model $record): bool
     {
         $user = self::currentUser();
 
-        return $user instanceof User
-            && $record instanceof User
-            && ($user->role !== UserRole::Owner || $record->store_id === $user->store_id)
-            && array_key_exists($record->role->value, UserRole::assignableOptionsFor($user->role));
+        return $user instanceof User && $record instanceof User && $user->role === UserRole::Admin;
     }
 
     public static function canDelete(Model $record): bool
@@ -106,11 +94,20 @@ class UserResource extends Resource
     }
 
     /** @return array<string, string> */
-    public static function assignableOptions(): array
+    public static function assignableOptions(?User $record = null): array
     {
         $user = self::currentUser();
 
-        return $user instanceof User ? UserRole::assignableOptionsFor($user->role) : [];
+        if ($user?->role !== UserRole::Admin) {
+            return [];
+        }
+
+        $options = UserRole::assignableOptionsFor(UserRole::Admin);
+        if ($record?->role === UserRole::Admin) {
+            $options[UserRole::Admin->value] = UserRole::Admin->label();
+        }
+
+        return $options;
     }
 
     private static function currentUser(): ?User

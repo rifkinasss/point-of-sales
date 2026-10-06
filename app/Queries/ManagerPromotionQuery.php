@@ -5,6 +5,7 @@ namespace App\Queries;
 use App\Models\Product;
 use App\Models\Promotion;
 use App\Models\User;
+use App\Services\ActiveStoreContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -25,18 +26,18 @@ class ManagerPromotionQuery
 
     public function find(User $manager, string $publicId): ?Promotion
     {
-        return Promotion::query()->withoutGlobalScopes()->with('product')->where('store_id', $manager->store_id)->where('public_id', $publicId)->first();
+        return Promotion::query()->withoutGlobalScopes()->with('product')->whereIn('store_id', $this->storeIds($manager))->where('public_id', $publicId)->first();
     }
 
     public function products(User $manager): array
     {
-        return Product::query()->withoutGlobalScopes()->where('store_id', $manager->store_id)->where('is_active', true)->orderBy('name')->get(['id', 'public_id', 'name', 'sku'])->all();
+        return Product::query()->withoutGlobalScopes()->whereIn('store_id', $this->storeIds($manager))->where('is_active', true)->orderBy('name')->get(['id', 'public_id', 'name', 'sku'])->all();
     }
 
     /** @return array{active:int,scheduled:int,expired:int,inactive:int} */
     public function metrics(User $manager): array
     {
-        $promotions = Promotion::query()->withoutGlobalScopes()->where('store_id', $manager->store_id)->get(['is_active', 'starts_at', 'ends_at']);
+        $promotions = Promotion::query()->withoutGlobalScopes()->whereIn('store_id', $this->storeIds($manager))->get(['is_active', 'starts_at', 'ends_at']);
         $now = CarbonImmutable::now($manager->store?->timezone ?: config('app.timezone', 'UTC'));
 
         return collect(['active' => 0, 'scheduled' => 0, 'expired' => 0, 'inactive' => 0])->merge($promotions->countBy(fn (Promotion $promotion): string => $this->status($promotion, $now)['key']))->all();
@@ -54,7 +55,7 @@ class ManagerPromotionQuery
 
     private function base(User $manager, array $filters): Builder
     {
-        $query = Promotion::query()->withoutGlobalScopes()->where('promotions.store_id', $manager->store_id);
+        $query = Promotion::query()->withoutGlobalScopes()->whereIn('promotions.store_id', $this->storeIds($manager));
         if (filled($filters['search'] ?? null)) {
             $needle = '%'.mb_strtolower(trim((string) $filters['search'])).'%';
             $query->whereRaw('LOWER(promotions.name) LIKE ?', [$needle]);
@@ -64,5 +65,11 @@ class ManagerPromotionQuery
         if (($filters['applicability'] ?? '') === 'all') $query->whereNull('product_id');
 
         return $query;
+    }
+
+    /** @return array<int, int> */
+    private function storeIds(User $manager): array
+    {
+        return app(ActiveStoreContext::class)->scope($manager)->ids();
     }
 }

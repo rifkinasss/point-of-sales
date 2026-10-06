@@ -6,6 +6,7 @@ use App\Enums\ShiftStatus;
 use App\Enums\UserRole;
 use App\Models\User;
 use App\Queries\ManagerShiftQuery;
+use App\Services\ActiveStoreContext;
 use App\Services\CashBalanceCalculator;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
@@ -68,7 +69,7 @@ class Index extends Component
         return view('livewire.manager.shifts.index', [
             'shifts' => $shifts,
             'metrics' => app(ManagerShiftQuery::class)->metrics($manager, ['datePreset' => $this->datePreset, 'dateFrom' => $this->dateFrom, 'dateTo' => $this->dateTo]),
-            'cashiers' => User::query()->where('store_id', $manager->store_id)->where('role', UserRole::Cashier)->orderBy('name')->get(['id', 'name']),
+            'cashiers' => User::query()->whereIn('store_id', app(ActiveStoreContext::class)->scope($manager)->ids())->where('role', UserRole::Cashier)->orderBy('name')->get(['id', 'name']),
         ])->layout('components.layouts.manager', ['title' => 'Shift Kasir', 'activeNav' => 'shifts']);
     }
 

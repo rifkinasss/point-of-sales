@@ -3,7 +3,6 @@
 namespace App\Filament\Pages;
 
 use App\Actions\Inventory\CompleteStockOpnameAction;
-use App\Enums\UserRole;
 use App\Models\Product;
 use BackedEnum;
 use Filament\Notifications\Notification;
@@ -23,5 +22,5 @@ class StockOpname extends Page
 
     public function mount(): void { $this->counts = Product::query()->with('inventory')->where('is_active', true)->get()->map(fn (Product $p) => ['product_id' => $p->id, 'name' => $p->name, 'system' => $p->inventory?->quantity ?? 0, 'actual_quantity' => $p->inventory?->quantity ?? 0])->all(); }
     public function complete(): void { app(CompleteStockOpnameAction::class)->handle(auth()->user(), $this->counts, $this->note); Notification::make()->success()->title('Stok opname disimpan dan mutasi dibuat.')->send(); $this->mount(); }
-    public static function canAccess(): bool { return in_array(auth()->user()?->role, [UserRole::Admin, UserRole::Owner, UserRole::Manager], true); }
+    public static function canAccess(): bool { return false; }
 }

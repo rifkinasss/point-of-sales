@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Enums\UserRole;
+use App\Models\Concerns\HasPublicId;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
@@ -11,17 +12,18 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Marcelodelgado\Announcements\Traits\HasAnnouncements;
 
-#[Fillable(['name', 'email', 'password', 'role', 'is_active', 'store_id'])]
+#[Fillable(['public_id', 'name', 'email', 'password', 'role', 'is_active', 'store_id'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<UserFactory> */
-    use HasAnnouncements, HasFactory, Notifiable;
+    use HasAnnouncements, HasFactory, HasPublicId, Notifiable;
 
     /**
      * Get the attributes that should be cast.
@@ -35,6 +37,7 @@ class User extends Authenticatable implements FilamentUser
             'is_active' => 'boolean',
             'password' => 'hashed',
             'role' => UserRole::class,
+            'last_login_at' => 'datetime',
         ];
     }
 
@@ -79,6 +82,16 @@ class User extends Authenticatable implements FilamentUser
     public function store(): BelongsTo
     {
         return $this->belongsTo(Store::class);
+    }
+
+    public function managedStores(): BelongsToMany
+    {
+        return $this->workspaceStores();
+    }
+
+    public function workspaceStores(): BelongsToMany
+    {
+        return $this->belongsToMany(Store::class, 'store_memberships')->withPivot('is_default')->withTimestamps();
     }
 
     public function sales(): HasMany

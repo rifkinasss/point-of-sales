@@ -23,7 +23,7 @@ class RoleWorkspaceRoutingTest extends TestCase
     {
         $owner = $this->user(UserRole::Owner);
 
-        $this->actingAs($owner)->get('/owner')->assertOk()->assertSee('Owner Overview');
+        $this->actingAs($owner)->get('/owner')->assertOk()->assertSee('Dashboard Owner');
     }
 
     public function test_operational_roles_cannot_cross_into_other_role_workspaces(): void

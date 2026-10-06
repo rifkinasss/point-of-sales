@@ -38,6 +38,24 @@ class BrowserTimezoneTest extends TestCase
         $this->assertSame('2026-10-04 07:00 WIB', $formatted);
     }
 
+    public function test_string_timestamp_is_normalized_as_utc_before_conversion(): void
+    {
+        Session::put('browser_timezone', 'Asia/Makassar');
+
+        $formatted = app(BrowserTimezone::class)->format(
+            '2026-10-04 00:00:00',
+            'Y-m-d H:i T',
+        );
+
+        $this->assertSame('2026-10-04 08:00 WITA', $formatted);
+    }
+
+    public function test_empty_timestamp_uses_the_empty_placeholder_contract(): void
+    {
+        $this->assertNull(app(BrowserTimezone::class)->format('', 'Y-m-d H:i'));
+        $this->assertNull(app(BrowserTimezone::class)->format(null, 'Y-m-d H:i'));
+    }
+
     public function test_browser_timezone_endpoint_stores_a_valid_timezone(): void
     {
         $this->actingAs(User::factory()->create());

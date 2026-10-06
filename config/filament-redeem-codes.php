@@ -62,7 +62,7 @@ return [
     |--------------------------------------------------------------------------
     */
     'filament' => [
-        'navigation_group' => 'Promosi',
+        'navigation_group' => 'System',
         'navigation_icon' => 'heroicon-o-ticket',
     ],
 

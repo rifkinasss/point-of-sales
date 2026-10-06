@@ -6,6 +6,7 @@ use App\Models\CashMovement;
 use App\Models\CashierShift;
 use App\Models\User;
 use App\Services\CashBalanceCalculator;
+use App\Services\ActiveStoreContext;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
@@ -17,14 +18,14 @@ class ManagerCashQuery
     {
         [$start, $end] = $this->shifts->dateRange($manager, $filters);
         $movements = CashMovement::withoutGlobalScopes()
-            ->where('store_id', $manager->store_id)
+            ->whereIn('store_id', $this->storeIds($manager))
             ->whereBetween('created_at', [$start, $end])
             ->select('type', DB::raw('SUM(amount) as total'))
             ->groupBy('type')
             ->pluck('total', 'type');
 
         $closed = CashierShift::query()->withoutGlobalScopes()
-            ->where('store_id', $manager->store_id)
+            ->whereIn('store_id', $this->storeIds($manager))
             ->whereNotNull('closed_at')
             ->whereBetween('closed_at', [$start, $end])
             ->selectRaw('COALESCE(SUM(closing_cash_actual), 0) as actual, COALESCE(SUM(cash_difference), 0) as variance')
@@ -54,5 +55,11 @@ class ManagerCashQuery
         }
 
         return $paginator;
+    }
+
+    /** @return array<int, int> */
+    private function storeIds(User $manager): array
+    {
+        return app(ActiveStoreContext::class)->scope($manager)->ids();
     }
 }

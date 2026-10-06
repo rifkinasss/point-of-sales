@@ -26,6 +26,7 @@ use UnitEnum;
 
 class PurchaseResource extends Resource
 {
+    public static function canViewAny(): bool { return false; }
     protected static ?string $model = Purchase::class;
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShoppingCart;
     protected static string|UnitEnum|null $navigationGroup = 'Pembelian';

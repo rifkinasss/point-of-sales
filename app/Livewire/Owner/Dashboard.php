@@ -20,7 +20,7 @@ class Dashboard extends Component
         $user = request()->user();
 
         return view('livewire.owner.dashboard', [
-            'summary' => app(OwnerDashboardQuery::class)->summary($user),
-        ])->layout('components.layouts.workspace', ['title' => 'Owner Overview', 'role' => 'Owner', 'nav' => [['label' => 'Overview', 'href' => route('owner.dashboard')]]]);
+            'dashboard' => app(OwnerDashboardQuery::class)->dashboard($user),
+        ])->layout('components.layouts.owner', ['title' => 'Dashboard Owner', 'activeNav' => 'dashboard']);
     }
 }

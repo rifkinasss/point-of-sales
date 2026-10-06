@@ -42,11 +42,33 @@ class DatabaseSeeder extends Seeder
                 'store_code' => 'BRN', 'branch_code' => null, 'invoice_prefix' => 'BRN', 'tax_percentage' => 0, 'receipt_footer' => 'Sampai jumpa kembali.',
                 'receipt_show_cashier' => true, 'receipt_show_tax' => false,
             ]);
+            $branchSepinggan = Store::query()->updateOrCreate(['slug' => 'naslabs-market-sepinggan'], [
+                'name' => 'NasLabs Market Sepinggan', 'phone' => '0812-3456-7891', 'email' => 'sepinggan@naslabs.my.id',
+                'address' => 'Jl. Marsma R. Iswahyudi, Balikpapan', 'currency' => 'IDR', 'timezone' => 'Asia/Makassar',
+                'store_code' => 'NSP', 'branch_code' => 'SEPINGG', 'invoice_prefix' => 'NLM', 'tax_percentage' => 11,
+                'receipt_footer' => 'Terima kasih sudah berbelanja di NasLabs Market.', 'receipt_show_cashier' => true, 'receipt_show_tax' => true,
+            ]);
+            $branchSamarinda = Store::query()->updateOrCreate(['slug' => 'naslabs-market-samarinda'], [
+                'name' => 'NasLabs Market Samarinda', 'phone' => '0812-3456-7892', 'email' => 'samarinda@naslabs.my.id',
+                'address' => 'Jl. P. Antasari, Samarinda', 'currency' => 'IDR', 'timezone' => 'Asia/Makassar',
+                'store_code' => 'NSM', 'branch_code' => 'SAMARIN', 'invoice_prefix' => 'NLM', 'tax_percentage' => 11,
+                'receipt_footer' => 'Terima kasih sudah berbelanja di NasLabs Market.', 'receipt_show_cashier' => true, 'receipt_show_tax' => true,
+            ]);
 
-            $owner = $this->user('Nadia Owner', 'owner@naslabs.my.id', UserRole::Owner, $store->id);
-            $manager = $this->user('Raka Manager', 'manager@naslabs.my.id', UserRole::Manager, $store->id);
-            $cashier = $this->user('Sinta Kasir', 'cashier@naslabs.my.id', UserRole::Cashier, $store->id);
-            $this->user('Administrator NasLabs', 'admin@naslabs.my.id', UserRole::Admin, null);
+            $owner = $this->user('Owner', 'owner@naslabs.my.id', UserRole::Owner, $store->id);
+            $manager = $this->user('Manager', 'manager@naslabs.my.id', UserRole::Manager, $store->id);
+            $manager->managedStores()->syncWithoutDetaching([
+                $store->id => ['is_default' => true],
+                $branchSepinggan->id => ['is_default' => false],
+                $branchSamarinda->id => ['is_default' => false],
+            ]);
+            $owner->workspaceStores()->sync([
+                $store->id => ['is_default' => true],
+                $branchSepinggan->id => ['is_default' => false],
+                $branchSamarinda->id => ['is_default' => false],
+            ]);
+            $cashier = $this->user('Cashier', 'cashier@naslabs.my.id', UserRole::Cashier, $store->id);
+            $this->user('Administrator', 'admin@naslabs.my.id', UserRole::Admin, null);
 
             $categories = [];
             foreach (['Makanan', 'Minuman', 'Kopi', 'Snack', 'Dessert'] as $categoryName) {

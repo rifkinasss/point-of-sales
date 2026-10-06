@@ -175,6 +175,121 @@
     color: #fff;
 }
 
+/* Admin shell override: a light system workspace with restrained blue emphasis. */
+.fi-panel-admin .fi-topbar,
+.fi-panel-admin .fi-sidebar {
+    border-color: var(--nl-border);
+    background: var(--nl-surface);
+}
+
+.fi-panel-admin .fi-topbar :is(.fi-logo, .fi-topbar-item-label, .fi-user-menu-trigger),
+.fi-panel-admin .fi-sidebar :is(.fi-sidebar-item-label, .fi-sidebar-database-notifications-btn-label) {
+    color: var(--nl-foreground) !important;
+}
+
+.fi-panel-admin .fi-sidebar .fi-sidebar-group-label {
+    color: var(--nl-muted) !important;
+}
+
+.fi-panel-admin .fi-topbar :is(.fi-icon, .fi-topbar-open-sidebar-btn, .fi-topbar-close-sidebar-btn),
+.fi-panel-admin .fi-sidebar :is(.fi-sidebar-item-btn > .fi-icon, .fi-sidebar-group-btn .fi-icon, .fi-sidebar-group-dropdown-trigger-btn .fi-icon) {
+    color: var(--nl-muted) !important;
+}
+
+.fi-panel-admin .fi-sidebar-item.fi-sidebar-item-has-url > .fi-sidebar-item-btn:hover,
+.fi-panel-admin .fi-sidebar-group-dropdown-trigger-btn:hover {
+    background: var(--nl-background) !important;
+}
+
+.fi-panel-admin .fi-sidebar-item.fi-active > .fi-sidebar-item-btn {
+    border: 1px solid var(--nl-primary-soft-strong);
+    background: var(--nl-primary-soft) !important;
+    box-shadow: none;
+}
+
+.fi-panel-admin .fi-sidebar-item.fi-active > .fi-sidebar-item-btn > :is(.fi-sidebar-item-label, .fi-icon) {
+    color: var(--nl-primary) !important;
+}
+
+.fi-panel-admin .fi-topbar [data-filament-app-version] {
+    border: 1px solid var(--nl-border);
+    background: var(--nl-background) !important;
+    color: var(--nl-muted) !important;
+    box-shadow: none !important;
+}
+
+.fi-panel-admin .fi-topbar .fi-global-search-field {
+    border-color: var(--nl-border);
+    border-radius: 0.5rem;
+    background: var(--nl-surface);
+    color: var(--nl-foreground);
+}
+
+.fi-panel-admin .fi-topbar .fi-global-search-field input {
+    color: var(--nl-foreground);
+}
+
+.fi-panel-admin .fi-wi-stats-overview-stat {
+    border-color: var(--nl-border);
+    background: var(--nl-surface);
+    box-shadow: 0 4px 12px rgb(15 23 42 / 0.04);
+}
+
+.fi-panel-admin .fi-wi-stats-overview-stat::after {
+    display: none;
+}
+
+.fi-panel-admin .fi-user-menu .fi-dropdown-panel {
+    border: 1px solid var(--nl-border);
+    background: var(--nl-surface);
+    box-shadow: 0 12px 24px rgb(15 23 42 / 0.12);
+}
+
+.fi-panel-admin .fi-user-menu .fi-dropdown-header,
+.fi-panel-admin .fi-user-menu .fi-dropdown-list-item-label {
+    color: var(--nl-secondary);
+}
+
+.fi-panel-admin .fi-user-menu .fi-dropdown-list-item:hover,
+.fi-panel-admin .fi-user-menu .fi-theme-switcher-btn:hover,
+.fi-panel-admin .fi-user-menu .fi-theme-switcher-btn:focus-visible {
+    background: var(--nl-primary-soft);
+    color: var(--nl-primary);
+}
+
+.fi-panel-admin .fi-user-menu .fi-dropdown-list-item .fi-icon,
+.fi-panel-admin .fi-user-menu .fi-dropdown-header .fi-icon {
+    color: var(--nl-primary);
+}
+
+.fi-panel-admin .fi-main {
+    background: var(--nl-background);
+}
+
+.dark .fi-panel-admin .fi-topbar,
+.dark .fi-panel-admin .fi-sidebar {
+    border-color: rgb(148 163 184 / 0.18);
+    background: var(--nl-foreground);
+}
+
+.dark .fi-panel-admin .fi-topbar :is(.fi-logo, .fi-topbar-item-label, .fi-user-menu-trigger),
+.dark .fi-panel-admin .fi-sidebar :is(.fi-sidebar-item-label, .fi-sidebar-database-notifications-btn-label) {
+    color: #f8fafc !important;
+}
+
+.dark .fi-panel-admin .fi-sidebar .fi-sidebar-group-label {
+    color: #94a3b8 !important;
+}
+
+.dark .fi-panel-admin .fi-sidebar-item.fi-active > .fi-sidebar-item-btn {
+    border-color: rgb(219 234 254 / 0.22);
+    background: rgb(59 82 226 / 0.2) !important;
+}
+
+.dark .fi-panel-admin .fi-sidebar-item.fi-active > .fi-sidebar-item-btn > :is(.fi-sidebar-item-label, .fi-icon) {
+    color: #bfdbfe !important;
+}
+
 /* POS is intentionally denser and more touch-friendly than resource pages. */
 .fi-panel-cashier .fi-main {
     background:

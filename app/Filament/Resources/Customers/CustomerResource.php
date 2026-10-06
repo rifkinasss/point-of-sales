@@ -23,6 +23,7 @@ use UnitEnum;
 
 class CustomerResource extends Resource
 {
+    public static function canViewAny(): bool { return false; }
     protected static ?string $model = Customer::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUserGroup;

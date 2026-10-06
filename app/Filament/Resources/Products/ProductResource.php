@@ -19,6 +19,7 @@ use UnitEnum;
 
 class ProductResource extends Resource
 {
+    public static function canViewAny(): bool { return false; }
     protected static ?string $model = Product::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShoppingBag;

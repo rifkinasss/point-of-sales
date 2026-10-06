@@ -4,7 +4,8 @@ namespace App\Services;
 
 use DateTimeInterface;
 use DateTimeZone;
-use Illuminate\Support\Carbon;
+use Carbon\CarbonImmutable;
+use Carbon\Exceptions\InvalidFormatException;
 
 class BrowserTimezone
 {
@@ -35,12 +36,20 @@ class BrowserTimezone
         }
     }
 
-    public function format(?DateTimeInterface $timestamp, string $format): ?string
+    public function format(DateTimeInterface|string|null $timestamp, string $format): ?string
     {
-        if ($timestamp === null) {
+        if ($timestamp === null || $timestamp === '') {
             return null;
         }
 
-        return Carbon::instance($timestamp)->copy()->timezone($this->current())->format($format);
+        try {
+            $normalized = $timestamp instanceof DateTimeInterface
+                ? CarbonImmutable::instance($timestamp)
+                : CarbonImmutable::parse($timestamp, 'UTC');
+        } catch (InvalidFormatException) {
+            return null;
+        }
+
+        return $normalized->setTimezone($this->current())->format($format);
     }
 }

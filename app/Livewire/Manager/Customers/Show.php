@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Models\Customer;
 use App\Models\User;
 use App\Queries\ManagerCustomerQuery;
+use App\Services\ActiveStoreContext;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 
@@ -45,6 +46,7 @@ class Show extends Component
     public function saveEdit(): void
     {
         $manager = $this->authorizeManager();
+        app(ActiveStoreContext::class)->requireSingleStore($manager);
         $data = $this->validate([
             'name' => ['required', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:30'],

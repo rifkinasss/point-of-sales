@@ -7,6 +7,7 @@ use App\Models\CashierShift;
 use App\Models\CashMovement;
 use App\Models\User;
 use App\Services\CashBalanceCalculator;
+use App\Services\ActiveStoreContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -20,7 +21,7 @@ class ManagerShiftQuery
         [$start, $end] = $this->dateRange($manager, $filters);
         $query = CashierShift::query()->withoutGlobalScopes()
             ->with(['cashier', 'closedBy'])
-            ->where('store_id', $manager->store_id)
+            ->whereIn('store_id', $this->storeIds($manager))
             ->whereBetween('opened_at', [$start, $end]);
 
         if (filled($filters['status'] ?? null) && in_array($filters['status'], array_column(ShiftStatus::cases(), 'value'), true)) {
@@ -49,7 +50,7 @@ class ManagerShiftQuery
     {
         return CashierShift::query()->withoutGlobalScopes()
             ->with(['cashier', 'closedBy', 'store', 'cashMovements'])
-            ->where('store_id', $manager->store_id)
+            ->whereIn('store_id', $this->storeIds($manager))
             ->where('public_id', $publicId)
             ->first();
     }
@@ -58,8 +59,8 @@ class ManagerShiftQuery
     public function metrics(User $manager, array $filters): array
     {
         [$start, $end] = $this->dateRange($manager, $filters);
-        $base = CashierShift::query()->withoutGlobalScopes()->where('store_id', $manager->store_id)->whereBetween('opened_at', [$start, $end]);
-        $movements = CashMovement::withoutGlobalScopes()->where('store_id', $manager->store_id)->whereBetween('created_at', [$start, $end])->select('type', DB::raw('SUM(amount) as total'))->groupBy('type')->pluck('total', 'type');
+        $base = CashierShift::query()->withoutGlobalScopes()->whereIn('store_id', $this->storeIds($manager))->whereBetween('opened_at', [$start, $end]);
+        $movements = CashMovement::withoutGlobalScopes()->whereIn('store_id', $this->storeIds($manager))->whereBetween('created_at', [$start, $end])->select('type', DB::raw('SUM(amount) as total'))->groupBy('type')->pluck('total', 'type');
 
         return [
             'active' => (clone $base)->where('status', ShiftStatus::Open)->count(),
@@ -98,5 +99,11 @@ class ManagerShiftQuery
         }
 
         return [$today->startOfDay()->utc(), $today->endOfDay()->utc()];
+    }
+
+    /** @return array<int, int> */
+    private function storeIds(User $manager): array
+    {
+        return app(ActiveStoreContext::class)->scope($manager)->ids();
     }
 }

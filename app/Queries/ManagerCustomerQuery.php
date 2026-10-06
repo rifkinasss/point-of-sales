@@ -6,6 +6,7 @@ use App\Enums\SaleStatus;
 use App\Models\Customer;
 use App\Models\Sale;
 use App\Models\User;
+use App\Services\ActiveStoreContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -25,13 +26,13 @@ class ManagerCustomerQuery
 
     public function find(User $manager, string $publicId): ?Customer
     {
-        return Customer::query()->withoutGlobalScopes()->where('store_id', $manager->store_id)->where('public_id', $publicId)->first();
+        return Customer::query()->withoutGlobalScopes()->whereIn('store_id', $this->storeIds($manager))->where('public_id', $publicId)->first();
     }
 
     public function transactions(User $manager, Customer $customer): LengthAwarePaginator
     {
         return Sale::query()->withoutGlobalScopes()->with(['cashier', 'payments'])
-            ->where('store_id', $manager->store_id)->where('customer_id', $customer->id)
+            ->whereIn('store_id', $this->storeIds($manager))->where('customer_id', $customer->id)
             ->whereIn('status', [SaleStatus::Paid, SaleStatus::Refunded, SaleStatus::Voided])
             ->latest('completed_at')->latest('created_at')->paginate(10, pageName: 'customerTransactionsPage');
     }
@@ -41,15 +42,15 @@ class ManagerCustomerQuery
     {
         $timezone = $manager->store?->timezone ?: config('app.timezone', 'UTC');
         $month = CarbonImmutable::now($timezone);
-        $paidSales = Sale::query()->withoutGlobalScopes()->where('store_id', $manager->store_id)->where('status', SaleStatus::Paid);
+        $paidSales = Sale::query()->withoutGlobalScopes()->whereIn('store_id', $this->storeIds($manager))->where('status', SaleStatus::Paid);
         $spend = (int) (clone $paidSales)->sum('grand_total');
         $transactions = (int) (clone $paidSales)->count();
 
         return [
-            'total' => Customer::query()->withoutGlobalScopes()->where('store_id', $manager->store_id)->count(),
-            'activeThisMonth' => Customer::query()->withoutGlobalScopes()->where('store_id', $manager->store_id)->whereHas('sales', fn ($sales) => $sales->withoutGlobalScopes()->where('store_id', $manager->store_id)->where('status', SaleStatus::Paid)->whereBetween('completed_at', [$month->startOfMonth()->utc(), $month->endOfMonth()->utc()]))->count(),
-            'newThisMonth' => Customer::query()->withoutGlobalScopes()->where('store_id', $manager->store_id)->whereBetween('created_at', [$month->startOfMonth()->utc(), $month->endOfMonth()->utc()])->count(),
-            'returning' => Customer::query()->withoutGlobalScopes()->where('store_id', $manager->store_id)->whereIn('id', (clone $paidSales)->select('customer_id')->whereNotNull('customer_id')->groupBy('customer_id')->havingRaw('COUNT(*) >= 2'))->count(),
+            'total' => Customer::query()->withoutGlobalScopes()->whereIn('store_id', $this->storeIds($manager))->count(),
+            'activeThisMonth' => Customer::query()->withoutGlobalScopes()->whereIn('store_id', $this->storeIds($manager))->whereHas('sales', fn ($sales) => $sales->withoutGlobalScopes()->whereIn('store_id', $this->storeIds($manager))->where('status', SaleStatus::Paid)->whereBetween('completed_at', [$month->startOfMonth()->utc(), $month->endOfMonth()->utc()]))->count(),
+            'newThisMonth' => Customer::query()->withoutGlobalScopes()->whereIn('store_id', $this->storeIds($manager))->whereBetween('created_at', [$month->startOfMonth()->utc(), $month->endOfMonth()->utc()])->count(),
+            'returning' => Customer::query()->withoutGlobalScopes()->whereIn('store_id', $this->storeIds($manager))->whereIn('id', (clone $paidSales)->select('customer_id')->whereNotNull('customer_id')->groupBy('customer_id')->havingRaw('COUNT(*) >= 2'))->count(),
             'averageSpend' => $transactions > 0 ? intdiv($spend, $transactions) : 0,
         ];
     }
@@ -57,7 +58,7 @@ class ManagerCustomerQuery
     /** @return array{transactions:int,spend:int,average:int,first:?string,last:?string} */
     public function customerMetrics(User $manager, Customer $customer): array
     {
-        $sales = Sale::query()->withoutGlobalScopes()->where('store_id', $manager->store_id)->where('customer_id', $customer->id)->where('status', SaleStatus::Paid);
+        $sales = Sale::query()->withoutGlobalScopes()->whereIn('store_id', $this->storeIds($manager))->where('customer_id', $customer->id)->where('status', SaleStatus::Paid);
         $count = (int) (clone $sales)->count();
         $spend = (int) (clone $sales)->sum('grand_total');
 
@@ -72,7 +73,7 @@ class ManagerCustomerQuery
 
     private function base(User $manager, array $filters): Builder
     {
-        $query = Customer::query()->withoutGlobalScopes()->where('customers.store_id', $manager->store_id);
+        $query = Customer::query()->withoutGlobalScopes()->whereIn('customers.store_id', $this->storeIds($manager));
         if (filled($filters['search'] ?? null)) {
             $needle = '%'.mb_strtolower(trim((string) $filters['search'])).'%';
             $query->where(fn (Builder $q) => $q->whereRaw('LOWER(customers.name) LIKE ?', [$needle])->orWhereRaw('LOWER(COALESCE(customers.phone, \'\')) LIKE ?', [$needle])->orWhereRaw('LOWER(COALESCE(customers.email, \'\')) LIKE ?', [$needle])->orWhereRaw('LOWER(customers.code) LIKE ?', [$needle]));
@@ -81,14 +82,20 @@ class ManagerCustomerQuery
             $query->where('is_active', (bool) ((string) $filters['active'] === '1'));
         }
         if (($filters['activity'] ?? '') === 'transacted') {
-            $query->whereHas('sales', fn ($sales) => $sales->withoutGlobalScopes()->where('store_id', $manager->store_id)->where('status', SaleStatus::Paid));
+            $query->whereHas('sales', fn ($sales) => $sales->withoutGlobalScopes()->whereIn('store_id', $this->storeIds($manager))->where('status', SaleStatus::Paid));
         } elseif (($filters['activity'] ?? '') === 'never') {
-            $query->whereDoesntHave('sales', fn ($sales) => $sales->withoutGlobalScopes()->where('store_id', $manager->store_id)->where('status', SaleStatus::Paid));
+            $query->whereDoesntHave('sales', fn ($sales) => $sales->withoutGlobalScopes()->whereIn('store_id', $this->storeIds($manager))->where('status', SaleStatus::Paid));
         } elseif (($filters['activity'] ?? '') === 'last_30') {
             $since = CarbonImmutable::now($manager->store?->timezone ?: config('app.timezone', 'UTC'))->subDays(30)->startOfDay()->utc();
-            $query->whereHas('sales', fn ($sales) => $sales->withoutGlobalScopes()->where('store_id', $manager->store_id)->where('status', SaleStatus::Paid)->where('completed_at', '>=', $since));
+            $query->whereHas('sales', fn ($sales) => $sales->withoutGlobalScopes()->whereIn('store_id', $this->storeIds($manager))->where('status', SaleStatus::Paid)->where('completed_at', '>=', $since));
         }
 
         return $query;
+    }
+
+    /** @return array<int, int> */
+    private function storeIds(User $manager): array
+    {
+        return app(ActiveStoreContext::class)->scope($manager)->ids();
     }
 }

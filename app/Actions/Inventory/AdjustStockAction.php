@@ -8,15 +8,20 @@ use App\Enums\UserRole;
 use App\Models\Inventory;
 use App\Models\Product;
 use App\Models\StockMovement;
+use App\Models\Store;
 use App\Models\User;
+use App\Services\ActiveStoreContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class AdjustStockAction
 {
-    public function handle(Product $product, User $performedBy, StockMovementType $type, int $quantity, string $reason): StockMovement
+    public function handle(Product $product, User $performedBy, StockMovementType $type, int $quantity, string $reason, ?Store $authorizedStore = null): StockMovement
     {
-        if ($performedBy->role !== UserRole::Admin && $product->store_id !== $performedBy->store_id) {
+        $authorized = $performedBy->role === UserRole::Admin
+            || ($performedBy->role === UserRole::Owner && $authorizedStore && $authorizedStore->id === $product->store_id && app(ActiveStoreContext::class)->authorizedStores($performedBy)->contains('id', $authorizedStore->id))
+            || ($performedBy->role !== UserRole::Admin && $performedBy->role !== UserRole::Owner && $product->store_id === $performedBy->store_id);
+        if (! $authorized) {
             throw ValidationException::withMessages([
                 'product' => 'Produk tidak berada pada store aktif pengguna.',
             ]);

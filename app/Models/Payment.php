@@ -18,6 +18,7 @@ class Payment extends Model
         'change_amount',
         'reference_number',
         'paid_at',
+        'refunded_at',
         'received_by',
     ];
 

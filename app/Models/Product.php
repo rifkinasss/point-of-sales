@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\ProductType;
 use App\Models\Concerns\BelongsToCurrentStore;
 use App\Models\Concerns\HasPublicId;
+use App\Models\Store;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -45,6 +46,11 @@ class Product extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function store(): BelongsTo
+    {
+        return $this->belongsTo(Store::class);
     }
 
     public function unit(): BelongsTo
