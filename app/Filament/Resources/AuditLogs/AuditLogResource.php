@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Filament\Resources\AuditLogs\Pages\ListAuditLogs;
 use App\Filament\Resources\AuditLogs\Pages\ViewAuditLog;
 use App\Models\AuditLog;
+use App\Services\BrowserTimezone;
 use BackedEnum;
 use Filament\Forms\Components\DatePicker;
 use Filament\Infolists\Components\KeyValueEntry;
@@ -35,10 +36,12 @@ class AuditLogResource extends Resource
     public static function infolist(Schema $schema): Schema
     {
         return $schema->components([
-            Section::make('Event')
+            Section::make('Aktivitas')
                 ->schema([
-                    TextEntry::make('event')->label('Aktivitas')->badge(),
-                    TextEntry::make('created_at')->label('Waktu')->dateTime('d M Y, H:i:s'),
+                    TextEntry::make('event')->label('Aktivitas')->badge()
+                        ->formatStateUsing(fn (?string $state): string => str($state ?: 'Aktivitas sistem')->replace('_', ' ')->title()->toString()),
+                    TextEntry::make('summary')->label('Ringkasan')->state(fn (AuditLog $record): string => self::eventSummary($record))->columnSpanFull(),
+                    TextEntry::make('created_at')->label('Waktu')->state(fn (AuditLog $record): string => app(BrowserTimezone::class)->format($record->created_at, 'd M Y, H:i:s') ?? 'Waktu tidak tersedia'),
                     TextEntry::make('user.name')->label('Pelaku')->placeholder('Sistem'),
                     TextEntry::make('ip_address')->label('Alamat IP')->placeholder('Tidak tersedia'),
                 ])->columns(2),
@@ -47,7 +50,7 @@ class AuditLogResource extends Resource
                     TextEntry::make('auditable_type')->label('Resource')->formatStateUsing(fn (?string $state): string => class_basename((string) $state)),
                     TextEntry::make('resource_reference')->label('Referensi')->state(fn (AuditLog $record): string => $record->resourceReference()),
                     TextEntry::make('store.name')->label('Store')->placeholder('Platform / tidak terkait'),
-                    TextEntry::make('url')->label('Request URL')->placeholder('Tidak tersedia')->columnSpanFull(),
+                    TextEntry::make('url')->label('Request URL')->placeholder('Tidak tersedia')->columnSpanFull()->copyable(),
                 ])->columns(2),
             Section::make('Perubahan')
                 ->schema([
@@ -55,6 +58,18 @@ class AuditLogResource extends Resource
                     KeyValueEntry::make('new_values')->label('Sesudah')->state(fn (AuditLog $record): array => $record->safeNewValues())->columnSpan(1),
                 ])->columns(2),
         ]);
+    }
+
+    private static function eventSummary(AuditLog $record): string
+    {
+        $actor = $record->user?->name ?? 'Sistem';
+        $target = $record->resourceReference();
+
+        return match (true) {
+            str($record->event)->contains(['login', 'logout']) => $actor.' melakukan '.$record->event.'.',
+            filled($target) => $actor.' melakukan '.str($record->event)->replace('_', ' ').' pada '.$target.'.',
+            default => $actor.' melakukan '.str($record->event)->replace('_', ' ').'.',
+        };
     }
 
     public static function table(Table $table): Table

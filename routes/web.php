@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegistrationController;
 use App\Http\Controllers\BrowserTimezoneController;
+use App\Http\Controllers\AccountSwitchBackController;
 use App\Http\Controllers\CashierReceiptPrintController;
 use App\Http\Controllers\ManagerReportPrintController;
 use App\Http\Controllers\ManagerStoreContextController;
@@ -51,11 +52,12 @@ use App\Livewire\Owner\Cash\Index as OwnerCash;
 use App\Livewire\Owner\Cash\Show as OwnerCashShow;
 use Illuminate\Support\Facades\Route;
 
-Route::redirect('/', '/auth/login');
+Route::view('/', 'welcome')->name('landing');
 
 Route::get('/auth/login', [LoginController::class, 'create'])->name('auth.login');
 Route::post('/auth/login', [LoginController::class, 'store'])->name('auth.login.store');
 Route::post('/auth/logout', [LoginController::class, 'destroy'])->middleware('auth')->name('auth.logout');
+Route::post('/account-switcher/switch-back', AccountSwitchBackController::class)->middleware('auth')->name('account-switcher.switch-back');
 Route::get('/cashier/open-shift', OpenShift::class)->middleware('auth')->name('cashier.open-shift');
 Route::post('/cashier/browser-timezone', BrowserTimezoneController::class)->middleware('auth')->name('cashier.browser-timezone');
 Route::redirect('/cashier', '/cashier/pos')->middleware('auth')->name('cashier.workspace');

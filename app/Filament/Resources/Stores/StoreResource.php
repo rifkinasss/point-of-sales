@@ -8,8 +8,10 @@ use App\Enums\StoreStatus;
 use App\Enums\UserRole;
 use App\Filament\Resources\Stores\Pages\ListStores;
 use App\Filament\Resources\Stores\Pages\ViewStore;
+use App\Models\AuditLog;
 use App\Models\Store;
 use App\Models\User;
+use App\Services\BrowserTimezone;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
@@ -44,31 +46,50 @@ class StoreResource extends Resource
     public static function infolist(Schema $schema): Schema
     {
         return $schema->components([
-            Section::make('Identitas')
+            Section::make('Identitas store')
+                ->description('Status dan identitas platform yang digunakan untuk mengenali store ini.')
                 ->schema([
-                    TextEntry::make('name')->label('Nama toko'),
-                    TextEntry::make('store_code')->label('Kode toko'),
+                    TextEntry::make('name')->label('Nama toko')->weight('bold'),
+                    TextEntry::make('store_code')->label('Kode toko')->copyable(),
                     TextEntry::make('branch_code')->label('Kode cabang')->placeholder('Tidak diatur'),
-                    TextEntry::make('status')->label('Status')->badge()->formatStateUsing(fn (StoreStatus $state): string => $state->label()),
+                    TextEntry::make('branch_name')->label('Nama cabang')->placeholder('Tidak diatur'),
+                    TextEntry::make('status')->label('Status')->badge()->formatStateUsing(fn (StoreStatus $state): string => $state->label())
+                        ->color(fn (StoreStatus $state): string => $state === StoreStatus::Active ? 'success' : 'gray'),
                     TextEntry::make('address')->label('Alamat')->placeholder('Tidak diatur')->columnSpanFull(),
                     TextEntry::make('phone')->label('Telepon')->placeholder('Tidak diatur'),
                 ])->columns(2),
-            Section::make('Akses')
+            Section::make('Snapshot operasional')
+                ->description('Ringkasan keadaan store saat ini, bukan laporan performa bisnis.')
+                ->schema([
+                    TextEntry::make('active_users')->label('Pengguna aktif')->state(fn (Store $record): string => (string) $record->users()->where('is_active', true)->count()),
+                    TextEntry::make('managers_count')->label('Manager')->state(fn (Store $record): string => (string) $record->managers()->count()),
+                    TextEntry::make('cashiers_count')->label('Kasir')->state(fn (Store $record): string => (string) $record->users()->where('role', UserRole::Cashier)->count()),
+                    TextEntry::make('products_count')->label('Produk aktif')->state(fn (Store $record): string => (string) $record->products()->where('is_active', true)->count()),
+                    TextEntry::make('active_shifts')->label('Shift aktif')->state(fn (Store $record): string => (string) $record->cashierShifts()->where('status', ShiftStatus::Open)->count()),
+                ])->columns(2),
+            Section::make('Akses dan subscription')
                 ->schema([
                     TextEntry::make('owner')->label('Owner')->state(fn (Store $record): string => $record->users()->where('role', UserRole::Owner)->value('name') ?? 'Tidak ditemukan'),
-                    TextEntry::make('managers')->label('Manager')->state(fn (Store $record): string => $record->managers()->pluck('name')->join(', ') ?: 'Tidak ada'),
-                    TextEntry::make('cashiers')->label('Cashier')->state(fn (Store $record): string => $record->users()->where('role', UserRole::Cashier)->pluck('name')->join(', ') ?: 'Tidak ada'),
-                    TextEntry::make('active_users')->label('Pengguna aktif')->state(fn (Store $record): string => (string) $record->users()->where('is_active', true)->count()),
+                    TextEntry::make('managers')->label('Manager')->state(fn (Store $record): string => $record->managers()->pluck('name')->join(', ') ?: 'Belum ada manager yang ditugaskan'),
+                    TextEntry::make('cashiers')->label('Kasir')->state(fn (Store $record): string => $record->users()->where('role', UserRole::Cashier)->pluck('name')->join(', ') ?: 'Belum ada kasir yang ditugaskan')->columnSpanFull(),
+                    TextEntry::make('plan')->label('Paket')->placeholder('Belum diatur'),
+                    TextEntry::make('subscription')->label('Status subscription')->state(fn (Store $record): string => $record->latestSubscription?->status ?? 'Belum ada subscription'),
+                    TextEntry::make('subscription_started_at')->label('Mulai subscription')->state(fn (Store $record): string => app(BrowserTimezone::class)->format($record->latestSubscription?->starts_at, 'd M Y') ?? 'Belum tersedia'),
                 ])->columns(2),
-            Section::make('Operasional dan platform')
+            Section::make('Aktivitas platform')
                 ->schema([
-                    TextEntry::make('active_shifts')->label('Shift aktif')->state(fn (Store $record): string => (string) $record->cashierShifts()->where('status', ShiftStatus::Open)->count()),
-                    TextEntry::make('recent_transactions')->label('Transaksi terbaru')->state(fn (Store $record): string => (string) $record->sales()->latest()->limit(10)->count()),
-                    TextEntry::make('plan')->label('Paket')->placeholder('Tidak diatur'),
-                    TextEntry::make('subscription')->label('Status subscription')->state(fn (Store $record): string => $record->subscriptions()->latest()->value('status') ?? 'Belum ada'),
-                    TextEntry::make('created_at')->label('Dibuat')->dateTime(),
-                    TextEntry::make('updated_at')->label('Diperbarui')->dateTime(),
-                ])->columns(2),
+                    TextEntry::make('recent_activity')->label('Aktivitas terbaru')->state(function (Store $record): string {
+                        $timezone = app(BrowserTimezone::class);
+
+                        return AuditLog::withoutGlobalScopes()
+                            ->where('store_id', $record->getKey())
+                            ->latest()
+                            ->limit(5)
+                            ->get()
+                            ->map(fn (AuditLog $activity): string => $activity->event.' · '.($timezone->format($activity->created_at, 'd M Y, H:i') ?? 'Waktu tidak tersedia'))
+                            ->join("\n") ?: 'Belum ada aktivitas administrasi yang tercatat untuk store ini.';
+                    })->listWithLineBreaks()->columnSpanFull(),
+                ]),
         ]);
     }
 

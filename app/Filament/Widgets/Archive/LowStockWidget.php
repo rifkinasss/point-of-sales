@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Widgets;
+namespace App\Filament\Widgets\Archive;
 
 use App\Enums\ProductType;
 use App\Models\Product;

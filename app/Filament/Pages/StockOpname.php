@@ -15,7 +15,7 @@ class StockOpname extends Page
     protected string $view = 'filament.pages.stock-opname';
     protected static ?string $navigationLabel = 'Stok opname';
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClipboardDocumentCheck;
-    protected static string|UnitEnum|null $navigationGroup = 'Inventori';
+    protected static string|UnitEnum|null $navigationGroup = 'Operations';
     protected static ?int $navigationSort = 20;
     public array $counts = [];
     public ?string $note = null;

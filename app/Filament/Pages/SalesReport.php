@@ -26,7 +26,7 @@ class SalesReport extends Page
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedChartBarSquare;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Laporan';
+    protected static string|UnitEnum|null $navigationGroup = 'Operations';
 
     protected static ?string $title = 'Laporan Penjualan';
 

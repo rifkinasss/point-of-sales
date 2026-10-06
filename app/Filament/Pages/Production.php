@@ -15,7 +15,7 @@ class Production extends Page
     protected string $view = 'filament.pages.production';
     protected static ?string $navigationLabel = 'Produksi';
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedWrenchScrewdriver;
-    protected static string|UnitEnum|null $navigationGroup = 'Inventori';
+    protected static string|UnitEnum|null $navigationGroup = 'Operations';
     protected static ?int $navigationSort = 30;
     public ?int $productId = null; public int $quantity = 1; public ?string $note = null;
     public function getProductsProperty() { return Product::query()->whereHas('recipeIngredients')->with('recipeIngredients.ingredient.unit')->get(); }

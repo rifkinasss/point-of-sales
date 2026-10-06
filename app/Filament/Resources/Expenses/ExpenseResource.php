@@ -27,7 +27,7 @@ class ExpenseResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBanknotes;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Keuangan';
+    protected static string|UnitEnum|null $navigationGroup = 'Operations';
 
     protected static ?string $navigationLabel = 'Pengeluaran';
 

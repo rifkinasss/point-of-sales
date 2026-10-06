@@ -26,7 +26,7 @@ class FinancialReport extends Page
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBanknotes;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Laporan';
+    protected static string|UnitEnum|null $navigationGroup = 'Operations';
 
     protected static ?int $navigationSort = 20;
 

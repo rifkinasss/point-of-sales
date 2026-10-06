@@ -16,7 +16,7 @@
     @livewireStyles
 </head>
 
-<body class="nl-page h-screen overflow-hidden antialiased" x-data="{
+<body class="nl-page flex h-screen flex-col overflow-hidden antialiased" x-data="{
     sidebarOpen: false,
     sidebarCollapsed: false,
     isDesktop() {
@@ -38,7 +38,8 @@ $watch('sidebarCollapsed', value => localStorage.setItem('managerSidebarCollapse
     x-on:keydown.escape.window="sidebarOpen = false">
     <div x-cloak x-show="sidebarOpen" x-on:click="sidebarOpen = false"
         class="fixed inset-0 z-30 bg-slate-950/30 lg:hidden" aria-hidden="true"></div>
-    <div class="flex h-full">
+    <x-account-switcher-banner />
+    <div class="flex min-h-0 flex-1">
         <aside
             class="fixed inset-y-0 left-0 z-40 flex w-72 -translate-x-full flex-col border-r border-border bg-surface px-5 py-5 transition-[width,transform] duration-200 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 lg:w-[var(--manager-sidebar-width)]"
             style="--manager-sidebar-width: 16rem"

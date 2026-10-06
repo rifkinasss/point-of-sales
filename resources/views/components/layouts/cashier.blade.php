@@ -9,6 +9,7 @@
         @livewireStyles
     </head>
     <body class="nl-page min-h-screen antialiased">
+        <x-account-switcher-banner />
         {{ $slot }}
 
         @livewireScripts

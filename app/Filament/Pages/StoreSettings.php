@@ -33,7 +33,7 @@ class StoreSettings extends Page implements HasForms
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBuildingStorefront;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Pengaturan';
+    protected static string|UnitEnum|null $navigationGroup = 'System';
 
     protected static ?string $title = 'Pengaturan Toko';
 

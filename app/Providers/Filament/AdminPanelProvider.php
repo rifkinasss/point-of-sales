@@ -3,17 +3,21 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Resources\Security\UserSessionResource;
+use App\Filament\Pages\AdminDashboard;
+use App\Filament\Widgets\AdminQuickActionsWidget;
+use App\Filament\Widgets\PlatformDistributionWidget;
 use App\Filament\Widgets\PlatformOverviewWidget;
+use App\Filament\Widgets\RecentAdminActivityWidget;
 use App\Filament\Widgets\SecurityOverviewWidget;
 use App\Filament\Widgets\StorePerformanceWidget;
 use App\Http\Middleware\AuthenticateFilamentPanel;
+use App\Services\PostLoginRedirector;
 use Asharif88\FilamentPlotly\FilamentPlotlyPlugin;
 use CraftForge\FilamentLanguageSwitcher\FilamentLanguageSwitcherPlugin;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Navigation\NavigationGroup;
-use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Furic\FilamentRedeemCodes\FilamentRedeemCodesPlugin;
@@ -26,7 +30,6 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Islamv\FilamentSettingsPlugin\FilamentSettingsPlugin;
 use Marcelodelgado\Announcements\AnnouncementsPlugin;
 use Packstub\AccountSwitcher\AccountSwitcherPlugin;
-use Smony\FilamentUserSessions\Widgets\OnlineSessionsWidget;
 use SolutionForest\FilamentLoginGuard\FilamentLoginGuardPlugin;
 use Vaslv\FilamentAppVersion\AppVersionPlugin;
 use Xplodman\CountUp\CountUpPlugin;
@@ -62,6 +65,7 @@ class AdminPanelProvider extends PanelProvider
             ->plugin(
                 AccountSwitcherPlugin::make()
                     ->linkedAccounts(false)
+                    ->redirectTo(fn (\App\Models\User $user): string => app(PostLoginRedirector::class)->pathFor($user))
                     ->logSwitches()
                     ->banner(position: 'top', style: 'dark'),
             )
@@ -71,7 +75,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([
-                Dashboard::class,
+                AdminDashboard::class,
             ])
             ->navigationGroups([
                 NavigationGroup::make('Overview'),
@@ -83,8 +87,10 @@ class AdminPanelProvider extends PanelProvider
             ->widgets([
                 PlatformOverviewWidget::class,
                 SecurityOverviewWidget::class,
+                PlatformDistributionWidget::class,
+                RecentAdminActivityWidget::class,
                 StorePerformanceWidget::class,
-                OnlineSessionsWidget::class,
+                AdminQuickActionsWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,

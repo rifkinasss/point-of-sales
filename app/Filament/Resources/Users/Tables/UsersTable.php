@@ -15,6 +15,7 @@ use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Password;
 use Packstub\AccountSwitcher\Filament\Actions\ImpersonateAction;
+use Packstub\AccountSwitcher\AccountSwitcher;
 
 class UsersTable
 {
@@ -65,7 +66,7 @@ class UsersTable
             ])
             ->recordActions([
                 ImpersonateAction::make()
-                    ->visible(fn (User $record): bool => auth()->user() instanceof User && auth()->user()->canImpersonate($record)),
+                    ->visible(fn (User $record): bool => auth()->user() instanceof User && app(AccountSwitcher::class)->canImpersonate(auth()->user(), $record)),
                 Action::make('resetPassword')
                     ->label('Atur ulang password')
                     ->icon('heroicon-o-key')

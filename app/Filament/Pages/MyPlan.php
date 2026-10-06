@@ -21,7 +21,7 @@ class MyPlan extends Page
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedSparkles;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Pengaturan';
+    protected static string|UnitEnum|null $navigationGroup = 'Platform';
 
     protected static ?int $navigationSort = 5;
 
